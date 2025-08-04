@@ -8,6 +8,8 @@ class Entity:
     def __init__(self, address, contract):
         self.address = address
         self.contract = contract
+        self.storage_name_to_statevariable = {}
+        self.statevariable_to_storage_name = {}
 
     def get_address(self):
         return self.address
@@ -16,19 +18,18 @@ class Entity:
         entities= {}
 
         for storage in self.contract.storage_variables_ordered:
-            if self.filter_storage(storage):
-                entity= {}
-                # 获取其类型信息
-                entity["type"] = self._get_type_structure(storage.type)
-                # 获取其storage slot信息
-                entity["storageInfo"] = self._get_storage_slot(storage)
-                entities[storage.name] = entity
+            entity= {}
+            # 获取其类型信息
+            entity["type"] = self._get_type_structure(storage.type)
+            # 获取其storage slot信息
+            entity["storageInfo"] = self._get_storage_slot(storage)
+            entities[storage.name] = entity
+            self.storage_name_to_statevariable[storage.name] = storage
+            self.statevariable_to_storage_name[storage] = storage.name
+            
 
         self.storage_meta = entities
         return entities
-
-    def filter_storage(self, storage):
-        return True
 
     # 获取storage的slot信息, storage_name使用基于storage_meta的表示
     def get_storage_slot(self, storage):

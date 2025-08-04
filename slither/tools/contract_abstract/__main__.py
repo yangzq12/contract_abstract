@@ -7,8 +7,10 @@ from crytic_compile import cryticparser, CryticCompile
 import json
 from slither import Slither
 from slither.exceptions import SlitherError
+from slither.tools.contract_abstract.contract import contract_walker
 from slither.tools.contract_abstract.onchain.contract_info import ContractInfo
 from slither.tools.contract_abstract.contract.entity import Entity
+from slither.tools.contract_abstract.contract.contract_walker import ContractWalker
 import os
 
 logging.basicConfig()
@@ -80,6 +82,21 @@ def get_primary_contract(slither, target, args):
             return contract, slither, target
     raise SlitherError(f"Primary contract not found for {target}")
 
+
+def get_contract_from_name(slither, contract_name):
+    for contract in slither.contracts:
+        if contract.name == contract_name:
+            return contract
+
+
+def get_function_from_name(slither, contract_name, function_name):
+    for contract in slither.contracts:
+        if contract.name == contract_name:
+            for function in contract.functions_and_modifiers_declared:
+                if function.name == function_name:
+                    return function
+                
+
 def main() -> None:
     args = parse_args()
 
@@ -105,8 +122,18 @@ def main() -> None:
     entity = Entity(target, primary_contract)
     storage_meta_json =entity.get_storage_meta() 
 
+    # 通过对合约的所有entry的函数
+    contract_walker = ContractWalker(primary_contract, entity)
+    contract_walker.walk()
+
+
+    #输出最终的meta.json的结构
     result = {}
     result[primary_contract.name]={"entities" : storage_meta_json, "address": args.contract_source[0]}
+
+    get_contract_from_name(slither, primary_contract.name)
+
+    get_function_from_name(slither, primary_contract.name, "supply")
 
     output_file_name = primary_contract.name + "_meta.json"
     if args.output_path:
@@ -114,6 +141,8 @@ def main() -> None:
     # 将storage_meta_json写入到文件中
     with open(output_file_name, "w") as f:
         json.dump(result, f, indent=4)
+
+    
 
     logger.info(f"------------END------------")
 

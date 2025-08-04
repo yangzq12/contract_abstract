@@ -4,7 +4,6 @@ from slither.tools.read_storage.read_storage import SlitherReadStorage
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class ContractInfo:
