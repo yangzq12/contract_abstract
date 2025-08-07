@@ -41,6 +41,7 @@ from slither.tools.contract_abstract.contract.context import AbstractContext
 from slither.core.solidity_types.user_defined_type import UserDefinedType
 from slither.core.solidity_types.elementary_type import ElementaryType
 
+from slither.tools.contract_abstract.contract.node import StartNode, EndNode, RemainNode
 import z3
 
 class SlitherIRParser:
@@ -87,7 +88,8 @@ class SlitherIRParser:
             for argument in self.ir.arguments:
                 argument_context = self._deal_with_read(argument)
                 arguments_contexts.append(argument_context)
-            all_paths = self.walker.enter_function(function, arguments_contexts)
+            all_paths = []
+            self.walker.get_all_paths(function.entry_point, [StartNode(function, arguments_contexts)], all_paths, self)
             return all_paths, function
         elif isinstance(self.ir, Return):
             self.parse_bitmap(self.ir)
@@ -231,7 +233,10 @@ class SlitherIRParser:
             if isinstance(self.ir.lvalue, ReferenceVariable) and self.ir.lvalue == self.ir.variable_left: # 说明是自加、自减等类似的运算
                 context = AbstractContext(left_context.input, left_context.storage, left_context.input_taints | right_context.input_taints, left_context.storage_taints | right_context.storage_taints, "("+left_context.value+")"+self.ir.type_str+"("+right_context.value+")")
             else:
-                context = AbstractContext(None, None, left_context.input_taints | right_context.input_taints, left_context.storage_taints | right_context.storage_taints, "("+left_context.value+")"+self.ir.type_str+"("+right_context.value+")")
+                if left_context.value is None or right_context.value is None:
+                    context = AbstractContext(None, None, left_context.input_taints | right_context.input_taints, left_context.storage_taints | right_context.storage_taints, None)
+                else:
+                    context = AbstractContext(None, None, left_context.input_taints | right_context.input_taints, left_context.storage_taints | right_context.storage_taints, "("+left_context.value+")"+self.ir.type_str+"("+right_context.value+")")
             self._deal_with_write(self.ir.lvalue, context)
             self.parse_bitmap(self.ir)
         elif isinstance(self.ir, TypeConversion):
@@ -282,7 +287,10 @@ class SlitherIRParser:
                 argument_context = self._deal_with_read(argument)
                 context.storage_taints = context.storage_taints | argument_context.storage_taints
                 context.input_taints = context.input_taints | argument_context.input_taints
-                arguments = arguments + argument_context.value + ","
+                if argument_context.value is not None:
+                    arguments = arguments + argument_context.value + ","
+                else:
+                    arguments = arguments + ","
             context.value = self.ir.function.name+"("+arguments+")"
             self._deal_with_write(self.ir.lvalue, context)
         elif isinstance(self.ir, Unpack):
@@ -338,7 +346,8 @@ class SlitherIRParser:
         elif isinstance(self.ir, Unary):
             lvalue = self.ir.lvalue
             context = self._deal_with_read(self.ir.rvalue)
-            context.value =self.ir.type.value + "(" + context.value + ")"
+            if context.value is not None:
+                context.value =self.ir.type.value + "(" + context.value + ")"                
             self._deal_with_write(lvalue, context)
             self.parse_bitmap(self.ir)
         elif isinstance(self.ir, CodeSize):
