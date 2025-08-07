@@ -18,6 +18,8 @@ from slither.slithir.operations.new_elementary_type import NewElementaryType
 from slither.slithir.operations.new_contract import NewContract
 from slither.slithir.operations.length import Length
 from slither.slithir.operations.unary import Unary
+from slither.slithir.operations.codesize import CodeSize
+from slither.slithir.operations.delete import Delete
 
 from slither.core.variables.state_variable import StateVariable
 from slither.core.variables.local_variable import LocalVariable
@@ -26,6 +28,8 @@ from slither.core.declarations.solidity_variables import SolidityVariableCompose
 from slither.core.declarations.structure import Structure
 from slither.core.declarations.structure_contract import StructureContract
 from slither.core.declarations.contract import Contract
+from slither.core.declarations.solidity_variables import SolidityVariable
+from slither.core.declarations.enum_contract import EnumContract
 
 from slither.slithir.variables.temporary import TemporaryVariable
 from slither.slithir.variables.reference import ReferenceVariable
@@ -35,6 +39,7 @@ from slither.slithir.variables.constant import Constant
 from slither.tools.contract_abstract.contract.context import AbstractContext
 
 from slither.core.solidity_types.user_defined_type import UserDefinedType
+from slither.core.solidity_types.elementary_type import ElementaryType
 
 
 
@@ -83,7 +88,7 @@ class SlitherIRParser:
                 argument_context = self._deal_with_read(argument)
                 arguments_contexts.append(argument_context)
             all_paths = self.contract_walker.enter_function(function, arguments_contexts)
-            return all_paths
+            return all_paths, function
         elif isinstance(self.ir, Return):
             pass
         elif isinstance(self.ir, NewStructure):
@@ -100,7 +105,6 @@ class SlitherIRParser:
             if isinstance(self.ir.variable_left, Contract):
                 context = AbstractContext(None, None, set(), set(), None)
                 context_left = self._deal_with_read(self.ir.variable_left)
-                context_right = self._deal_with_read(self.ir.variable_right)
                 if context_left.input is not None:
                     if isinstance(context_left.input, str):
                         context.input = context_left.input+"."+self.ir.variable_right.name
@@ -123,6 +127,10 @@ class SlitherIRParser:
                     raise Exception("Contract context left storage_taints is not a set")
                 if context_left.value is not None:
                     context.value = context_left.value+"."+self.ir.variable_right.name
+                self._deal_with_write(self.ir.lvalue, context)
+            elif isinstance(self.ir.variable_left, EnumContract):
+                left_context = self._deal_with_read(self.ir.variable_left)
+                context = AbstractContext(None, None, left_context.input_taints, left_context.storage_taints, left_context.value+"."+self.ir.variable_right.name)
                 self._deal_with_write(self.ir.lvalue, context)
             elif isinstance(self.ir.variable_left.type, UserDefinedType):
                 if isinstance(self.ir.variable_left.type.type, Structure):
@@ -168,7 +176,7 @@ class SlitherIRParser:
                     if isinstance(lvalue, ReferenceVariable) and lvalue.points_to is not None:
                         points_to = lvalue.points_to
                         points_to_origin = lvalue.points_to_origin
-                        if points_to == points_to_origin: # 说明只有一层引用
+                        if points_to == points_to_origin or "abstract" in points_to.context: # 说明只有一层引用或者我们只需要处理一层
                             if isinstance(points_to.type, UserDefinedType):
                                 if isinstance(points_to.type.type, Structure):
                                     for i, elem in enumerate(points_to.type.type.elems_ordered):
@@ -215,104 +223,7 @@ class SlitherIRParser:
             lvalue = self.ir.lvalue
             context = self._deal_with_read(self.ir.rvalue)
             self._deal_with_write(lvalue, context)
-            # 对reference指向的值也进行处理
-            if isinstance(lvalue, ReferenceVariable) and lvalue.points_to is not None:
-                if "points_to" not in lvalue.context: # 说明是直接指向
-                    self._deal_with_write(lvalue.points_to, context)
-                else: # 说明是指向字段
-                    index = lvalue.context["points_to"]
-                    points_to = lvalue.points_to
-                    if "abstract" not in points_to.context:
-                        points_to.context["abstract"] = AbstractContext(None, None, set(), set(), None)
-                    points_to_context = points_to.context["abstract"]
-                    if points_to_context.input is not None:
-                        if isinstance(points_to_context.input, list):
-                            points_to_context.input[index] = context.input
-                        else:
-                            origin_input = points_to_context.input
-                            points_to_context.input = []
-                            for i, e in enumerate(points_to.type.type.elems_ordered): #当前只考虑是结构体的情况
-                                if i == index:
-                                    points_to_context.input.append(context.input)
-                                else:
-                                    points_to_context.input.append(origin_input+"."+e.name)
-                    else:
-                        points_to_context.input = []
-                        for i, e in enumerate(points_to.type.type.elems_ordered): #当前只考虑是结构体的情况
-                            if i == index:
-                                points_to_context.input.append(context.input)
-                            else:
-                                points_to_context.input.append(None)
-                    if points_to_context.storage is not None:
-                        if isinstance(points_to_context.storage, list):
-                            points_to_context.storage[index] = context.storage
-                        else:
-                            origin_storage = points_to_context.storage
-                            points_to_context.storage = []
-                            for i, e in enumerate(points_to.type.type.elems_ordered): #当前只考虑是结构体的情况
-                                if i == index:
-                                    points_to_context.storage.append(context.storage)
-                                else:
-                                    points_to_context.storage.append(origin_storage+"."+e.name)
-                    else:
-                        points_to_context.storage = []
-                        for i, e in enumerate(points_to.type.type.elems_ordered): #当前只考虑是结构体的情况
-                            if i == index:
-                                points_to_context.storage.append(context.storage)
-                            else:
-                                points_to_context.storage.append(None)
-                    if points_to_context.input_taints is not None:
-                        if isinstance(points_to_context.input_taints, list):
-                            points_to_context.input_taints[index] = context.input_taints
-                        else:
-                            origin_input_taints = points_to_context.input_taints
-                            points_to_context.input_taints = []
-                            for i, e in enumerate(points_to.type.type.elems_ordered): #当前只考虑是结构体的情况
-                                if i == index:
-                                    points_to_context.input_taints.append(context.input_taints)
-                                else:
-                                    points_to_context.input_taints.append(origin_input_taints)
-                    else:
-                        points_to_context.input_taints = []
-                        for i, e in enumerate(points_to.type.type.elems_ordered): #当前只考虑是结构体的情况
-                            if i == index:
-                                points_to_context.input_taints.append(context.input_taints)
-                            else:
-                                points_to_context.input_taints.append(None)
-                    if points_to_context.storage_taints is not None:
-                        if isinstance(points_to_context.storage_taints, list):
-                            points_to_context.storage_taints[index] = context.storage_taints
-                        else:
-                            origin_storage_taints = points_to_context.storage_taints
-                            points_to_context.storage_taints = []
-                            for i, e in enumerate(points_to.type.type.elems_ordered): #当前只考虑是结构体的情况
-                                if i == index:
-                                    points_to_context.storage_taints.append(context.storage_taints)
-                                else:
-                                    points_to_context.storage_taints.append(origin_storage_taints)
-                    else:
-                        points_to_context.storage_taints = []
-                        for i, e in enumerate(points_to.type.type.elems_ordered): #当前只考虑是结构体的情况
-                            if i == index:
-                                points_to_context.storage_taints.append(context.storage_taints)
-                    if points_to_context.value is not None:
-                        if isinstance(points_to_context.value, list):
-                            points_to_context.value[index] = context.value
-                        else:
-                            origin_value = points_to_context.value
-                            points_to_context.value = []
-                            for i, e in enumerate(points_to.type.type.elems_ordered): #当前只考虑是结构体的情况
-                                if i == index:
-                                    points_to_context.value.append(context.value)
-                                else:
-                                    points_to_context.value.append(origin_value+"."+e.name)
-                    else:
-                        points_to_context.value = []
-                        for i, e in enumerate(points_to.type.type.elems_ordered): #当前只考虑是结构体的情况
-                            if i == index:
-                                points_to_context.value.append(context.value)
-                            else:
-                                points_to_context.value.append(None)
+            self._deal_with_reference(lvalue, context)
         elif isinstance(self.ir, Binary):
             left_context = self._deal_with_read(self.ir.variable_left)
             right_context = self._deal_with_read(self.ir.variable_right)
@@ -373,6 +284,7 @@ class SlitherIRParser:
             tuple_context = self._deal_with_read(self.ir.tuple)
             context = AbstractContext(tuple_context.input[self.ir.index], tuple_context.storage[self.ir.index], tuple_context.input_taints[self.ir.index], tuple_context.storage_taints[self.ir.index], tuple_context.value[self.ir.index])
             self._deal_with_write(self.ir.lvalue, context)
+            self._deal_with_reference(self.ir.lvalue, context)
         elif isinstance(self.ir, EventCall):
             pass
         elif isinstance(self.ir, Length):
@@ -389,9 +301,30 @@ class SlitherIRParser:
             context = AbstractContext(input_context, storage_context, value_context.input_taints, value_context.storage_taints, value)
             self._deal_with_write(self.ir.lvalue, context)
         elif isinstance(self.ir, NewArray):
-            pass
+            context = AbstractContext(None, None, set(), set(), None)
+            arguments = ""
+            for i, argument in enumerate(self.ir.arguments):
+                argument_context = self._deal_with_read(argument)
+                if isinstance(argument_context.storage_taints, list): # TODO: 只处理一层list
+                    for x in argument_context.storage_taints:
+                        context.storage_taints = context.storage_taints | x
+                else:
+                    context.storage_taints = context.storage_taints | argument_context.storage_taints
+                if isinstance(argument_context.input_taints, list): # TODO: 只处理一层list
+                    for x in argument_context.input_taints:
+                        context.input_taints = context.input_taints | x
+                else:
+                    context.input_taints = context.input_taints | argument_context.input_taints
+                if i == 0:
+                    arguments = arguments + str(argument_context.value)
+                else:
+                    arguments = arguments + "," + str(argument_context.value)
+            context.value = "newArray"+"("+arguments+")"
+            self._deal_with_write(self.ir.lvalue, context)
         elif isinstance(self.ir, InitArray):
-            pass
+            init_value_context = self._deal_with_read(self.ir.init_values[0]) # 默认只有一个init_value
+            context = init_value_context.copy()
+            self._deal_with_write(self.ir.lvalue, context)
         elif isinstance(self.ir, NewElementaryType):
             context = AbstractContext(None, None, set(), set(), None)
             self._deal_with_write(self.ir.lvalue, context)
@@ -402,9 +335,15 @@ class SlitherIRParser:
             context = self._deal_with_read(self.ir.rvalue)
             context.value =self.ir.type.value + "(" + context.value + ")"
             self._deal_with_write(lvalue, context)
+        elif isinstance(self.ir, CodeSize):
+            value_context = self._deal_with_read(self.ir.value)
+            context = AbstractContext(None, None, value_context.input_taints, value_context.storage_taints, value_context.value+".codesize")
+            self._deal_with_write(self.ir.lvalue, context)
+        elif isinstance(self.ir, Delete):
+            pass
         else:
             raise Exception(f"IR not supported: {self.ir}")
-        return []
+        return [], None
             
 
     def get_index_from_structure(self, variable_name, type):
@@ -426,6 +365,12 @@ class SlitherIRParser:
                 return AbstractContext(None, None, set(), set(), variable.name)
             elif isinstance(variable, Contract):
                 return AbstractContext(None, None, set(), set(), variable.name)
+            elif isinstance(variable, SolidityVariable):
+                return AbstractContext(None, None, set(), set(), variable.name)
+            elif isinstance(variable, LocalVariable) and variable.location == "default" and isinstance(variable.type, ElementaryType):
+                return AbstractContext(None, None, set(), set(), "0")
+            elif isinstance(variable, EnumContract):
+                return AbstractContext(None, None, set(), set(), variable.name)
             else:
                 raise Exception(f"Abstract context not found for {variable.name}")
         return variable.context["abstract"]
@@ -440,8 +385,109 @@ class SlitherIRParser:
 
 
     def _deal_with_write(self, lvalue, context):
-        lvalue.context["abstract"] = context
-        self.lvalues.append(lvalue)
+        if lvalue is not None:
+            lvalue.context["abstract"] = context
+            self.lvalues.append(lvalue)
+
+    def _deal_with_reference(self, lvalue, context):
+        # 对reference指向的值也进行处理
+        if isinstance(lvalue, ReferenceVariable) and lvalue.points_to is not None:
+            if "points_to" not in lvalue.context: # 说明是直接指向
+                self._deal_with_write(lvalue.points_to, context)
+            else: # 说明是指向字段
+                index = lvalue.context["points_to"]
+                points_to = lvalue.points_to
+                if "abstract" not in points_to.context:
+                    points_to.context["abstract"] = AbstractContext(None, None, set(), set(), None)
+                points_to_context = points_to.context["abstract"]
+                if points_to_context.input is not None:
+                    if isinstance(points_to_context.input, list):
+                        points_to_context.input[index] = context.input
+                    else:
+                        origin_input = points_to_context.input
+                        points_to_context.input = []
+                        for i, e in enumerate(points_to.type.type.elems_ordered): #当前只考虑是结构体的情况
+                            if i == index:
+                                points_to_context.input.append(context.input)
+                            else:
+                                points_to_context.input.append(origin_input+"."+e.name)
+                else:
+                    points_to_context.input = []
+                    for i, e in enumerate(points_to.type.type.elems_ordered): #当前只考虑是结构体的情况
+                        if i == index:
+                            points_to_context.input.append(context.input)
+                        else:
+                            points_to_context.input.append(None)
+                if points_to_context.storage is not None:
+                    if isinstance(points_to_context.storage, list):
+                        points_to_context.storage[index] = context.storage
+                    else:
+                        origin_storage = points_to_context.storage
+                        points_to_context.storage = []
+                        for i, e in enumerate(points_to.type.type.elems_ordered): #当前只考虑是结构体的情况
+                            if i == index:
+                                points_to_context.storage.append(context.storage)
+                            else:
+                                points_to_context.storage.append(origin_storage+"."+e.name)
+                else:
+                    points_to_context.storage = []
+                    for i, e in enumerate(points_to.type.type.elems_ordered): #当前只考虑是结构体的情况
+                        if i == index:
+                            points_to_context.storage.append(context.storage)
+                        else:
+                            points_to_context.storage.append(None)
+                if points_to_context.input_taints is not None:
+                    if isinstance(points_to_context.input_taints, list):
+                        points_to_context.input_taints[index] = context.input_taints
+                    else:
+                        origin_input_taints = points_to_context.input_taints
+                        points_to_context.input_taints = []
+                        for i, e in enumerate(points_to.type.type.elems_ordered): #当前只考虑是结构体的情况
+                            if i == index:
+                                points_to_context.input_taints.append(context.input_taints)
+                            else:
+                                points_to_context.input_taints.append(origin_input_taints)
+                else:
+                    points_to_context.input_taints = []
+                    for i, e in enumerate(points_to.type.type.elems_ordered): #当前只考虑是结构体的情况
+                        if i == index:
+                            points_to_context.input_taints.append(context.input_taints)
+                        else:
+                            points_to_context.input_taints.append(None)
+                if points_to_context.storage_taints is not None:
+                    if isinstance(points_to_context.storage_taints, list):
+                        points_to_context.storage_taints[index] = context.storage_taints
+                    else:
+                        origin_storage_taints = points_to_context.storage_taints
+                        points_to_context.storage_taints = []
+                        for i, e in enumerate(points_to.type.type.elems_ordered): #当前只考虑是结构体的情况
+                            if i == index:
+                                points_to_context.storage_taints.append(context.storage_taints)
+                            else:
+                                points_to_context.storage_taints.append(origin_storage_taints)
+                else:
+                    points_to_context.storage_taints = []
+                    for i, e in enumerate(points_to.type.type.elems_ordered): #当前只考虑是结构体的情况
+                        if i == index:
+                            points_to_context.storage_taints.append(context.storage_taints)
+                if points_to_context.value is not None:
+                    if isinstance(points_to_context.value, list):
+                        points_to_context.value[index] = context.value
+                    else:
+                        origin_value = points_to_context.value
+                        points_to_context.value = []
+                        for i, e in enumerate(points_to.type.type.elems_ordered): #当前只考虑是结构体的情况
+                            if i == index:
+                                points_to_context.value.append(context.value)
+                            else:
+                                points_to_context.value.append(origin_value+"."+e.name)
+                else:
+                    points_to_context.value = []
+                    for i, e in enumerate(points_to.type.type.elems_ordered): #当前只考虑是结构体的情况
+                        if i == index:
+                            points_to_context.value.append(context.value)
+                        else:
+                            points_to_context.value.append(None)
         
     def contintue_internal_call(self, return_variables):
         if return_variables is not None:

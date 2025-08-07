@@ -5,6 +5,7 @@ from slither.slithir.operations.return_operation import Return
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class ContractWalker:
     def __init__(self, contract, entity):
@@ -20,7 +21,7 @@ class ContractWalker:
             for storage in self.contract.storage_variables_ordered:
                 storage.context["abstract"] = AbstractContext(None, storage.name, set(), {storage.name}, storage.name)
 
-            logger.debug(f"Walking function: {function.canonical_name}")
+            logger.info(f"Walking function: {function.canonical_name}")
             all_paths = ContractWalker.enter_function(function, arguments_contexts)
             # walk a path
             for path in all_paths:
@@ -33,10 +34,12 @@ class ContractWalker:
     
     @staticmethod
     def enter_function(function, arguments_contexts):
+        logger.debug(f"Enter function: {function.canonical_name}")
         ContractWalker.deal_with_context_enter(function.parameters, arguments_contexts)
         # get all paths
         all_paths = []
-        ContractWalker.get_all_paths(function.entry_point, [], all_paths)
+        if function.entry_point is not None:
+            ContractWalker.get_all_paths(function.entry_point, [], all_paths)
 
         return all_paths
     
@@ -49,7 +52,7 @@ class ContractWalker:
         # 处理之前path的old_remain_irs中剩余的irs
         for i, ir in enumerate(old_remain_irs):
             slitherir_parser = SlitherIRParser(ir, walker)
-            child_paths = slitherir_parser.parse()
+            child_paths, child_function = slitherir_parser.parse()
             if len(child_paths) > 0: # 有新的分支路径需要加入，来自于internalCall和libraryCall
                 if i+1 < len(old_remain_irs):
                     remain_irs = old_remain_irs[i+1:]
@@ -64,7 +67,7 @@ class ContractWalker:
             for i,node in enumerate(path):
                 for j, ir in enumerate(node.irs):
                     slitherir_parser = SlitherIRParser(ir, walker)
-                    child_paths = slitherir_parser.parse()
+                    child_paths, child_function = slitherir_parser.parse()
                     if len(child_paths) > 0: # 有新的分支路径需要加入，来自于internalCall和libraryCall
                         if j+1 < len(node.irs):
                             remain_irs = node.irs[j+1:]
@@ -82,7 +85,7 @@ class ContractWalker:
         # 处理当前产生的child_paths
         for child_path in child_paths:
             # walk a child path
-            return_variables = ContractWalker.walk_function_path(function, child_path, [], walker) # TODO: 这里的function有问题，应该是child的function，而不是parent的function
+            return_variables = ContractWalker.walk_function_path(child_function, child_path, [], walker) 
             # deal with the last SlitherIRParse, it must be internalCall or libraryCall
             ir = irs[-1]
             ir.contintue_internal_call(return_variables)
@@ -100,7 +103,8 @@ class ContractWalker:
         path.append(node)
         if len(node.sons) > 0:
             for son in node.sons:
-                ContractWalker.get_all_paths(son, path.copy(), all_paths)
+                if son not in path:
+                    ContractWalker.get_all_paths(son, path.copy(), all_paths)
         else:
             all_paths.append(path)
 

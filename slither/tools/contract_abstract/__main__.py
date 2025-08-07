@@ -67,13 +67,13 @@ def parse_args() -> argparse.Namespace:
 #         raise SlitherError(f"Multiple primary contracts found for {target}")
 #     return primary_contracts[0]
 
-def get_primary_contract(slither, target, args):
+def get_primary_contract_with_address(slither, target, args):
     # 检查主合约是否是代理，如果是代理合约，应该分析的是代理合约所指向的逻辑合约
     if slither.compilation_units[0].crytic_compile_compilation_unit.implementation_address:
         logger.info(f"Proxy mode find for {target}, get logic contract: {slither.compilation_units[0].crytic_compile_compilation_unit.implementation_address}")
         target = slither.compilation_units[0].crytic_compile_compilation_unit.implementation_address
         slither = Slither(target, **vars(args))
-        return get_primary_contract(slither, target, args)
+        return get_primary_contract_with_address(slither, target, args)
 
     primary_contract_name = slither.compilation_units[0].crytic_compile_compilation_unit.unique_id
     for contract in slither.compilation_units[0].contracts:
@@ -81,6 +81,13 @@ def get_primary_contract(slither, target, args):
             logger.info(f"Get Primary contract: {contract.name}, for target: {target}")
             return contract, slither, target
     raise SlitherError(f"Primary contract not found for {target}")
+
+def get_primary_contract_with_source_code(slither, source_code, args):
+    for contract in slither.compilation_units[0].contracts:
+        if contract.file_scope.filename.absolute == os.path.abspath(source_code):
+            logger.info(f"Get Primary contract: {contract.name}, for source: {source_code}")
+            return contract, slither
+    raise SlitherError(f"Primary contract not found for {source_code}")
 
 
 def get_contract_from_name(slither, contract_name):
@@ -109,11 +116,13 @@ def main() -> None:
 
     if args.rpc_url:
         contract_info = ContractInfo(args.rpc_url, slither.contracts)
-    else:
-        raise SlitherError("RPC url is required")
+    
 
     # 获取主合约
-    primary_contract, slither, target = get_primary_contract(slither, target, args)
+    if source_code:
+        primary_contract, slither = get_primary_contract_with_source_code(slither, source_code, args)
+    else:
+        primary_contract, slither, target = get_primary_contract_with_address(slither, target, args)
 
     # 获取合约链上的字节码
     # bytecode = contract_info.get_contract_bytecode(target)

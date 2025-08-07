@@ -1,3 +1,5 @@
+import copy
+
 class AbstractContext:
     def __init__(self, input, storage, input_taint, storage_taint, value):
         # input表示其实该变量就是指向的最外层函数的某个input的值
@@ -16,3 +18,6 @@ class AbstractContext:
 
     def setValue(self, value):
         self.value = value
+    
+    def copy(self):
+        return AbstractContext(copy.deepcopy(self.input), copy.deepcopy(self.storage), copy.deepcopy(self.input_taints), copy.deepcopy(self.storage_taints), copy.deepcopy(self.value))
