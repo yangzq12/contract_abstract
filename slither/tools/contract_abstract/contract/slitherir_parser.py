@@ -3,7 +3,7 @@ from slither.slithir.operations.init_array import InitArray
 from slither.slithir.operations.member import Member
 from slither.slithir.operations.new_structure import NewStructure
 from slither.slithir.operations.assignment import Assignment
-from slither.slithir.operations.binary import Binary
+from slither.slithir.operations.binary import Binary, BinaryType
 from slither.slithir.operations.internal_call import InternalCall
 from slither.slithir.operations.library_call import LibraryCall
 from slither.slithir.operations.return_operation import Return
@@ -17,7 +17,7 @@ from slither.slithir.operations.new_array import NewArray
 from slither.slithir.operations.new_elementary_type import NewElementaryType
 from slither.slithir.operations.new_contract import NewContract
 from slither.slithir.operations.length import Length
-from slither.slithir.operations.unary import Unary
+from slither.slithir.operations.unary import Unary, UnaryType
 from slither.slithir.operations.codesize import CodeSize
 from slither.slithir.operations.delete import Delete
 
@@ -41,12 +41,12 @@ from slither.tools.contract_abstract.contract.context import AbstractContext
 from slither.core.solidity_types.user_defined_type import UserDefinedType
 from slither.core.solidity_types.elementary_type import ElementaryType
 
-
+import z3
 
 class SlitherIRParser:
     def __init__(self, ir, contract_walker):
         self.ir = ir
-        self.contract_walker = contract_walker
+        self.walker = contract_walker
         self.lvalues = []
 
     def parse(self):
@@ -87,10 +87,10 @@ class SlitherIRParser:
             for argument in self.ir.arguments:
                 argument_context = self._deal_with_read(argument)
                 arguments_contexts.append(argument_context)
-            all_paths = self.contract_walker.enter_function(function, arguments_contexts)
+            all_paths = self.walker.enter_function(function, arguments_contexts)
             return all_paths, function
         elif isinstance(self.ir, Return):
-            pass
+            self.parse_bitmap(self.ir)
         elif isinstance(self.ir, NewStructure):
             context = AbstractContext([], [], [], [], [])
             for argument in self.ir.arguments:
@@ -224,11 +224,16 @@ class SlitherIRParser:
             context = self._deal_with_read(self.ir.rvalue)
             self._deal_with_write(lvalue, context)
             self._deal_with_reference(lvalue, context)
+            self.parse_bitmap(self.ir)
         elif isinstance(self.ir, Binary):
             left_context = self._deal_with_read(self.ir.variable_left)
             right_context = self._deal_with_read(self.ir.variable_right)
-            context = AbstractContext(None, None, left_context.input_taints | right_context.input_taints, left_context.storage_taints | right_context.storage_taints, "("+left_context.value+")"+self.ir.type_str+"("+right_context.value+")")
+            if isinstance(self.ir.lvalue, ReferenceVariable) and self.ir.lvalue == self.ir.variable_left: # 说明是自加、自减等类似的运算
+                context = AbstractContext(left_context.input, left_context.storage, left_context.input_taints | right_context.input_taints, left_context.storage_taints | right_context.storage_taints, "("+left_context.value+")"+self.ir.type_str+"("+right_context.value+")")
+            else:
+                context = AbstractContext(None, None, left_context.input_taints | right_context.input_taints, left_context.storage_taints | right_context.storage_taints, "("+left_context.value+")"+self.ir.type_str+"("+right_context.value+")")
             self._deal_with_write(self.ir.lvalue, context)
+            self.parse_bitmap(self.ir)
         elif isinstance(self.ir, TypeConversion):
             lvalue = self.ir.lvalue
             context = self._deal_with_read(self.ir.variable)
@@ -335,6 +340,7 @@ class SlitherIRParser:
             context = self._deal_with_read(self.ir.rvalue)
             context.value =self.ir.type.value + "(" + context.value + ")"
             self._deal_with_write(lvalue, context)
+            self.parse_bitmap(self.ir)
         elif isinstance(self.ir, CodeSize):
             value_context = self._deal_with_read(self.ir.value)
             context = AbstractContext(None, None, value_context.input_taints, value_context.storage_taints, value_context.value+".codesize")
@@ -345,6 +351,62 @@ class SlitherIRParser:
             raise Exception(f"IR not supported: {self.ir}")
         return [], None
             
+    def parse_bitmap(self, ir):
+        if isinstance(ir, Binary):
+            if ir.type in {BinaryType.AND, BinaryType.OR, BinaryType.LEFT_SHIFT, BinaryType.RIGHT_SHIFT}: # 说明是位运算
+                self._deal_with_constant_bitmap(ir.variable_left)
+                self._deal_with_constant_bitmap(ir.variable_right)
+                if "bitmap" in ir.variable_left.context and "bitmap" in ir.variable_right.context:
+                    if ir.type == BinaryType.AND:
+                        ir.lvalue.context["bitmap"] = ir.variable_left.context["bitmap"] & ir.variable_right.context["bitmap"]
+                    elif ir.type == BinaryType.OR:
+                        ir.lvalue.context["bitmap"] = ir.variable_left.context["bitmap"] | ir.variable_right.context["bitmap"]
+                    elif ir.type == BinaryType.LEFT_SHIFT:
+                        ir.lvalue.context["bitmap"] = ir.variable_left.context["bitmap"] << ir.variable_right.context["bitmap"]
+                    elif ir.type == BinaryType.RIGHT_SHIFT:
+                        ir.lvalue.context["bitmap"] = ir.variable_left.context["bitmap"] >> ir.variable_right.context["bitmap"]
+            elif ir.type == BinaryType.EQUAL or ir.type == BinaryType.NOT_EQUAL:
+                self._deal_with_constant_bitmap(ir.variable_left)
+                self._deal_with_constant_bitmap(ir.variable_right)
+                if "bitmap" in ir.variable_left.context and "bitmap" in ir.variable_right.context:
+                    if ir.type == BinaryType.EQUAL:
+                        ir.lvalue.context["bitmap"] = ir.variable_left.context["bitmap"] == ir.variable_right.context["bitmap"]
+                    elif ir.type == BinaryType.NOT_EQUAL:
+                        ir.lvalue.context["bitmap"] = ir.variable_left.context["bitmap"] != ir.variable_right.context["bitmap"]
+            if "bitmap" in ir.lvalue.context and ir.lvalue.context["abstract"].storage is not None and isinstance(ir.lvalue.context["abstract"].storage, str) and isinstance(ir.lvalue.type, ElementaryType):
+                self.walker.bitmaps.add(z3.simplify(ir.lvalue.context["bitmap"]))
+        elif isinstance(ir, Unary):
+            if ir.type == UnaryType.TILD:
+                self._deal_with_constant_bitmap(ir.rvalue)
+                if "bitmap" in ir.rvalue.context:
+                    ir.lvalue.context["bitmap"] = ~ir.rvalue.context["bitmap"]
+                if "bitmap" in ir.lvalue.context and ir.lvalue.context["abstract"].storage is not None and isinstance(ir.lvalue.context["abstract"].storage, str) and isinstance(ir.lvalue.type, ElementaryType):
+                    self.walker.bitmaps.add(z3.simplify(ir.lvalue.context["bitmap"]))
+        elif isinstance(ir, Return):
+            for value in ir.values:
+                if "bitmap" in  value.context:
+                    self.walker.bitmaps.add(z3.simplify(value.context["bitmap"]))
+        elif isinstance(ir, Assignment):
+            if "bitmap" in ir.rvalue.context:
+                ir.lvalue.context["bitmap"] = ir.rvalue.context["bitmap"]
+                if ir.lvalue.context["abstract"].storage is not None and isinstance(ir.lvalue.context["abstract"].storage, str) and isinstance(ir.lvalue.type, ElementaryType):
+                    self.walker.bitmaps.add(z3.simplify(ir.lvalue.context["bitmap"]))
+
+                
+    
+    def _deal_with_constant_bitmap(self, variable):
+        if "bitmap" in variable.context:
+            return
+        elif isinstance(variable, StateVariable) and (variable.is_immutable or variable.is_constant):
+            if variable.initialized:
+                ir = variable.node_initialization.irs[0] #只处理直接赋值常量的形式
+                if isinstance(ir, Assignment) and isinstance(ir.rvalue, Constant) and isinstance(ir.rvalue.type, ElementaryType):
+                    ir.lvalue.context["bitmap"] = z3.BitVecVal(ir.rvalue.value, 256) # 默认ir.rvalue.type.size都是256
+        elif "abstract" in variable.context and variable.context["abstract"].storage is not None and isinstance(variable.context["abstract"].storage, str) and isinstance(variable.type, ElementaryType):
+            variable.context["bitmap"] = z3.BitVec(variable.context["abstract"].storage, 256)
+        elif isinstance(variable, Constant) and isinstance(variable.type, ElementaryType):
+            variable.context["bitmap"] = z3.BitVecVal(variable.value, 256)
+
 
     def get_index_from_structure(self, variable_name, type):
         for i, elem in enumerate(type.elems_ordered):
@@ -352,13 +414,12 @@ class SlitherIRParser:
                 return i
         raise Exception(f"Index not found for {variable_name} in {type.name}")
 
-
     def _deal_with_read(self, variable):
         if "abstract" not in variable.context or variable.context["abstract"] is None:
             if isinstance(variable, SolidityVariableComposed):
                 return AbstractContext(variable.name, None, {variable.name}, set(), variable.name)
             elif isinstance(variable, StateVariable) and (variable.is_immutable or variable.is_constant):
-                return AbstractContext(None, None, set(), set(), variable.name)
+                return AbstractContext(None, None, set(), set(), variable.name)               
             elif isinstance(variable, LocalVariable) and variable.location == "memory": #临时申请的memroy变量，在没有初始化之前是没有任何值的
                 return AbstractContext(None, None, set(), set(), None)
             elif isinstance(variable, Constant):
@@ -374,15 +435,6 @@ class SlitherIRParser:
             else:
                 raise Exception(f"Abstract context not found for {variable.name}")
         return variable.context["abstract"]
-        
-
-
-    def _deal_with_read_of_solidityvariablevomposed(self):
-        pass
-
-    def _deal_with_read_of_rvalue(self, rvalue, context):
-        pass
-
 
     def _deal_with_write(self, lvalue, context):
         if lvalue is not None:

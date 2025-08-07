@@ -5,12 +5,13 @@ from slither.slithir.operations.return_operation import Return
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 class ContractWalker:
     def __init__(self, contract, entity):
         self.contract = contract
         self.entity = entity
+        self.bitmaps = set()
 
     def walk(self):
         for function in self.contract.functions_entry_points:
@@ -30,11 +31,13 @@ class ContractWalker:
              # 清除每个storage的context
             for storage in self.contract.storage_variables_ordered:
                 storage.context["abstract"] = None
-              
+
     
     @staticmethod
     def enter_function(function, arguments_contexts):
         logger.debug(f"Enter function: {function.canonical_name}")
+        if function.canonical_name == "UserConfiguration.setBorrowing(DataTypes.UserConfigurationMap,uint256,bool)":
+            pass
         ContractWalker.deal_with_context_enter(function.parameters, arguments_contexts)
         # get all paths
         all_paths = []
