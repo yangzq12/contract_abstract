@@ -174,6 +174,10 @@ class Entity:
                 return i
         return -1
 
+    def get_storage_slot_from_name(self, name):
+        parsed_expr = Entity.parse_expr(name)
+        pass
+    
 
     
 

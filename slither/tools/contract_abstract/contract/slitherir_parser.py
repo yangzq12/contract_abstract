@@ -51,7 +51,7 @@ class SlitherIRParser:
         self.walker = contract_walker
         self.lvalues = []
 
-    def parse(self):
+    def parse(self, path, path_index):
         if isinstance(self.ir, Index):
             left_context = self._deal_with_read(self.ir.variable_left)
             right_context = self._deal_with_read(self.ir.variable_right)
@@ -89,9 +89,14 @@ class SlitherIRParser:
             for argument in self.ir.arguments:
                 argument_context = self._deal_with_read(argument)
                 arguments_contexts.append(argument_context)
+            if path_index+1 < len(path) and isinstance(path[path_index+1], StartNode):
+                if path[path_index+1].function.canonical_name == function.canonical_name:
+                    return [], self.ir, True
+                else:
+                    raise Exception(f"Internal function call has no match: {function.canonical_name}")
             all_paths = []
             self.walker.get_all_paths(function.entry_point, [StartNode(function, arguments_contexts)], all_paths, self)
-            return all_paths, self.ir
+            return all_paths, self.ir, False
         elif isinstance(self.ir, Return):
             self.parse_bitmap(self.ir)
         elif isinstance(self.ir, NewStructure):
@@ -233,11 +238,13 @@ class SlitherIRParser:
             right_context = self._deal_with_read(self.ir.variable_right)
             if isinstance(self.ir.lvalue, ReferenceVariable) and self.ir.lvalue == self.ir.variable_left: # 说明是自加、自减等类似的运算
                 context = AbstractContext(left_context.input, left_context.storage, left_context.input_taints | right_context.input_taints, left_context.storage_taints | right_context.storage_taints, "("+left_context.value+")"+self.ir.type_str+"("+right_context.value+")")
+                # context = AbstractContext(left_context.input, left_context.storage, left_context.input_taints | right_context.input_taints, left_context.storage_taints | right_context.storage_taints, "("+left_context.value[len(left_context.value)-50:]+")"+self.ir.type_str+"("+right_context.value[len(right_context.value)-50:]+")")
             else:
                 if left_context.value is None or right_context.value is None:
                     context = AbstractContext(None, None, left_context.input_taints | right_context.input_taints, left_context.storage_taints | right_context.storage_taints, None)
                 else:
                     context = AbstractContext(None, None, left_context.input_taints | right_context.input_taints, left_context.storage_taints | right_context.storage_taints, "("+left_context.value+")"+self.ir.type_str+"("+right_context.value+")")
+                    # context = AbstractContext(None, None, left_context.input_taints | right_context.input_taints, left_context.storage_taints | right_context.storage_taints, "("+left_context.value[len(left_context.value)-50:]+")"+self.ir.type_str+"("+right_context.value[len(right_context.value)-50:]+")")
             self._deal_with_write(self.ir.lvalue, context)
             self.parse_bitmap(self.ir)
         elif isinstance(self.ir, TypeConversion):
@@ -348,7 +355,8 @@ class SlitherIRParser:
             lvalue = self.ir.lvalue
             context = self._deal_with_read(self.ir.rvalue)
             if context.value is not None:
-                context.value =self.ir.type.value + "(" + context.value + ")"                
+                context.value =self.ir.type.value + "(" + context.value + ")" 
+                # context.value =self.ir.type.value               
             self._deal_with_write(lvalue, context)
             self.parse_bitmap(self.ir)
         elif isinstance(self.ir, CodeSize):
@@ -359,8 +367,65 @@ class SlitherIRParser:
             pass
         else:
             raise Exception(f"IR not supported: {self.ir}")
-        return [], self.ir
-            
+        return [], self.ir, False
+
+    @staticmethod
+    def clear_context(ir, storages):
+        if isinstance(ir, Index):
+            SlitherIRParser.clear_abstract(ir.lvalue, storages)
+        elif isinstance(ir, InternalCall) or isinstance(ir, LibraryCall):
+            pass
+        elif isinstance(ir, Return):
+            for value in ir.values:
+                SlitherIRParser.clear_abstract(value, storages)
+        elif isinstance(ir, NewStructure):
+            SlitherIRParser.clear_abstract(ir.lvalue, storages)
+        elif isinstance(ir, Member):
+            SlitherIRParser.clear_abstract(ir.lvalue, storages)
+        elif isinstance(ir, Assignment):
+            SlitherIRParser.clear_abstract(ir.lvalue, storages)
+        elif isinstance(ir, Binary):
+            SlitherIRParser.clear_abstract(ir.lvalue, storages)
+        elif isinstance(ir, TypeConversion):
+            SlitherIRParser.clear_abstract(ir.lvalue, storages)
+        elif isinstance(ir, HighLevelCall):
+            SlitherIRParser.clear_abstract(ir.lvalue, storages)
+        elif isinstance(ir, Condition):
+            pass
+        elif isinstance(ir, SolidityCall):
+            SlitherIRParser.clear_abstract(ir.lvalue, storages)
+        elif isinstance(ir, Unpack):
+            SlitherIRParser.clear_abstract(ir.lvalue, storages)
+        elif isinstance(ir, EventCall):
+            pass
+        elif isinstance(ir, Length):
+            SlitherIRParser.clear_abstract(ir.lvalue, storages)
+        elif isinstance(ir, NewArray):
+            SlitherIRParser.clear_abstract(ir.lvalue, storages)
+        elif isinstance(ir, InitArray):
+            SlitherIRParser.clear_abstract(ir.lvalue, storages)
+        elif isinstance(ir, NewElementaryType):
+            SlitherIRParser.clear_abstract(ir.lvalue, storages)
+        elif isinstance(ir, NewContract):
+            pass
+        elif isinstance(ir, Unary):
+            SlitherIRParser.clear_abstract(ir.lvalue, storages)
+        elif isinstance(ir, CodeSize):
+            SlitherIRParser.clear_abstract(ir.lvalue, storages)
+        elif isinstance(ir, Delete):
+            pass
+        else:
+            raise Exception(f"IR not supported: {ir}")
+
+    @staticmethod
+    def clear_abstract(value, storages):
+        if value is None or (isinstance(value, StateVariable) and value in storages):
+            pass
+        else:
+            value.context["abstract"] = None
+
+        
+
     def parse_bitmap(self, ir):
         if isinstance(ir, Binary):
             if ir.type in {BinaryType.AND, BinaryType.OR, BinaryType.LEFT_SHIFT, BinaryType.RIGHT_SHIFT}: # 说明是位运算
@@ -457,12 +522,27 @@ class SlitherIRParser:
                 return AbstractContext(None, None, set(), set(), variable.name)
             else:
                 raise Exception(f"Abstract context not found for {variable.name}")
+        # 记录读的storage
+        self.record_storage(self.walker.read_storages[self.walker.current_function.canonical_name], variable.context["abstract"])
         return variable.context["abstract"]
 
     def _deal_with_write(self, lvalue, context):
         if lvalue is not None:
             lvalue.context["abstract"] = context
             self.lvalues.append(lvalue)
+            # 记录写的storage
+            self.record_storage(self.walker.write_storages[self.walker.current_function.canonical_name], context)
+
+
+    def record_storage(self, collect, context):
+        self._recursive_add_storage(collect, context.storage)
+
+    def _recursive_add_storage(self, collect, storage):
+        if storage is not None and isinstance(storage, str):
+            collect.add(storage)
+        elif isinstance(storage, list):
+            for e in storage:
+                self._recursive_add_storage(collect, e)
 
     def _deal_with_reference(self, lvalue, context):
         # 对reference指向的值也进行处理
@@ -472,7 +552,7 @@ class SlitherIRParser:
             else: # 说明是指向字段
                 index = lvalue.context["points_to"]
                 points_to = lvalue.points_to
-                if "abstract" not in points_to.context:
+                if "abstract" not in points_to.context or points_to.context["abstract"] is None:
                     points_to.context["abstract"] = AbstractContext(None, None, set(), set(), None)
                 points_to_context = points_to.context["abstract"]
                 if points_to_context.input is not None:
@@ -563,6 +643,8 @@ class SlitherIRParser:
                             points_to_context.value.append(context.value)
                         else:
                             points_to_context.value.append(None)
+                #记录写storage
+                self.record_storage(self.walker.write_storages[self.walker.current_function.canonical_name], points_to_context)
         
     def contintue_internal_call(self, return_variables):
         if return_variables is not None:

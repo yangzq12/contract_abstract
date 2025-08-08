@@ -1,4 +1,5 @@
 import logging
+from signal import raise_signal
 from slither.tools.contract_abstract.contract.slitherir_parser import SlitherIRParser
 from slither.tools.contract_abstract.contract.context import AbstractContext
 from slither.slithir.operations.return_operation import Return
@@ -19,9 +20,17 @@ class ContractWalker:
         self.bitmaps = set()
         self.parse_functions = set()
         self.parse_irs = set()
+        self.read_storages = {} # 某个function所有的读的storage，key是function的name，value是set(storage_name)
+        self.write_storages = {} # 某个function所有的写的storage，key是function的name，value是set(storage_name)
+
+        self.current_function = None
 
     def walk(self):
         for function in self.contract.functions_entry_points:
+            self.read_storages[function.canonical_name] = set()
+            self.write_storages[function.canonical_name] = set()
+            self.current_function = function
+
             arguments_contexts = []
             for parameter in function.parameters:
                 arguments_contexts.append(AbstractContext(parameter.name, None, {parameter.name}, set(), parameter.name))
@@ -37,12 +46,20 @@ class ContractWalker:
             all_paths_with_index = []
             for i, path in enumerate(all_paths):
                 all_paths_with_index.append((0, path))
-
             while path_id < len(all_paths_with_index):
-                all_paths_with_index, path_id = ContractWalker.walk_path(all_paths_with_index[path_id], self, all_paths_with_index, path_id)
-             # 清除每个storage的context
-            for storage in self.contract.storage_variables_ordered:
-                storage.context["abstract"] = None
+                all_paths_with_index, new_path_id = self.walk_path(all_paths_with_index[path_id], self, all_paths_with_index, path_id)
+                if new_path_id > path_id and new_path_id < len(all_paths_with_index):
+                    # 清除本次路径产生的abstract context
+                    for node in all_paths_with_index[path_id][1]:
+                        if not isinstance(node, StartNode) and not isinstance(node, EndNode):
+                            for ir in node.irs:
+                                SlitherIRParser.clear_context(ir, [])
+                    # 由于是不同路径，需要对storage重新更新
+                    for storage in self.contract.storage_variables_ordered:
+                        storage.context["abstract"] = AbstractContext(None, storage.name, set(), {storage.name}, storage.name)
+                path_id = new_path_id
+            # 清除函数间可能互相影响的相关状态
+            self.parse_irs = set()
         self.analyse_bitmap()
         return
         for path_with_index in all_paths_with_index:
@@ -56,6 +73,89 @@ class ContractWalker:
                     return stack
         return []
     
+    def walk_path(self, path_with_index, walker, all_paths_with_index, path_id):
+        start_index = path_with_index[0]
+        path = path_with_index[1]
+        irs = []
+        child_paths = []
+        next_start_index = 0
+        remain_irs = []
+        call_ir = None
+        hop = False
+
+        # 再接着处理path
+        for i,node in enumerate(path):
+            next_start_index = i+1
+            if i < start_index:
+                continue
+            if isinstance(node, StartNode):
+                self.enter_function(node)
+            elif isinstance(node, EndNode):
+                if len(irs) > 0 and isinstance(irs[-1].ir, Return):
+                    self.exit_function(path, i, node, irs[-1].ir.values)
+                else:
+                    self.exit_function(path, i, node)
+            else:
+                for j, ir in enumerate(node.irs):
+                    slitherir_parser = SlitherIRParser(ir, walker)
+                    if j+1 < len(node.irs):
+                        remain_irs = node.irs[j+1:]
+                    else:
+                        remain_irs = []
+                    before_memory = ContractWalker.get_current_memory_usage()
+                    child_paths, call_ir, hop = slitherir_parser.parse(path, i)
+                    after_memory = ContractWalker.get_current_memory_usage()
+                    if after_memory-before_memory > 100:
+                        logger.info(f"Memory usage: {after_memory-before_memory} MB for {type(ir)}")
+                    # 先判断是不是需要跳过后续irs
+                    if hop:
+                        irs.append(slitherir_parser)
+                        break
+                    if len(child_paths) > 0: # 有新的分支路径需要加入，来自于internalCall和libraryCall
+                        irs.append(slitherir_parser)
+                        break
+                    irs.append(slitherir_parser)
+                if hop:
+                    continue
+                if len(child_paths) > 0:
+                    break
+        # 处理当前产生的child_paths,将其加入到现有的all_paths中
+        if len(child_paths) > 0 and call_ir is not None:
+            new_all_paths_with_index = []
+            # 先将之前的所有path加入
+            for i in range(0, path_id):
+                new_all_paths_with_index.append(all_paths_with_index[i])
+            # 将child_paths和当前的path合并
+            went_path = []
+            for i in range(0, next_start_index):
+                went_path.append(path[i])
+            filtered_child_paths = []
+            if walker.record_ir(call_ir): # 如果child_function被记录过，则只保留child_paths[0], 否则保留所有child_paths
+                filtered_child_paths.append(child_paths[0])
+            else:
+                filtered_child_paths = child_paths
+            for child_path in filtered_child_paths:
+                new_path = went_path.copy()
+                for child_node in child_path:
+                    new_path.append(child_node)
+                # 将remain_irs加入new_path
+                if len(remain_irs) > 0:
+                    new_path.append(RemainNode(remain_irs))
+                # 将path之后需要继续遍历的node加入new_path
+                for i in range(next_start_index, len(path)):
+                    new_path.append(path[i])
+                if len(new_all_paths_with_index) == path_id:
+                    new_all_paths_with_index.append((next_start_index, new_path))
+                else:
+                    new_all_paths_with_index.append((0, new_path))
+            # 将之后的所有path加入
+            if path_id < len(all_paths_with_index):
+                for i in range(path_id+1, len(all_paths_with_index)):
+                    new_all_paths_with_index.append(all_paths_with_index[i])
+            return new_all_paths_with_index, path_id
+        else:
+            return all_paths_with_index, path_id+1
+
     def analyse_bitmap(self):
         for named_bitmap in self.bitmaps:
             name = self.format_name(named_bitmap[0])
@@ -165,9 +265,6 @@ class ContractWalker:
                    pattern.append(i)
             bit_patterns.append((shift, pattern))
 
-
-
-
     @staticmethod
     def get_vars(expr):
         result = set()
@@ -181,93 +278,17 @@ class ContractWalker:
         collect(expr)
         return result
 
-    @staticmethod
-    def enter_function(start_node):
+    def enter_function(self,start_node):
         logger.debug(f"Enter function: {start_node.function.canonical_name}")
         ContractWalker.deal_with_context_enter(start_node.function.parameters, start_node.arguments_contexts)
         return
     
-    @staticmethod
-    def exit_function(end_node, return_variables=None):
+   
+    def exit_function(self,path, index, end_node, return_variables=None):
         logger.debug(f"Exit function: {end_node.function.canonical_name}")
         if end_node.call_operation is not None and return_variables is not None:
             end_node.call_operation.contintue_internal_call(return_variables)
-        return
-    
-    @staticmethod
-    def walk_path(path_with_index, walker, all_paths_with_index, path_id):
-        start_index = path_with_index[0]
-        path = path_with_index[1]
-        irs = []
-        child_paths = []
-        next_start_index = 0
-        remain_irs = []
-        call_ir = None
-
-        # 再接着处理path
-        for i,node in enumerate(path):
-            next_start_index = i+1
-            if i < start_index:
-                continue
-            if isinstance(node, StartNode):
-                ContractWalker.enter_function(node)
-            elif isinstance(node, EndNode):
-                if len(irs) > 0 and isinstance(irs[-1].ir, Return):
-                    ContractWalker.exit_function(node, irs[-1].ir.values)
-                else:
-                    ContractWalker.exit_function(node)
-            else:
-                for j, ir in enumerate(node.irs):
-                    slitherir_parser = SlitherIRParser(ir, walker)
-                    if j+1 < len(node.irs):
-                        remain_irs = node.irs[j+1:]
-                    else:
-                        remain_irs = []
-                    before_memory = ContractWalker.get_current_memory_usage()
-                    child_paths, call_ir = slitherir_parser.parse()
-                    after_memory = ContractWalker.get_current_memory_usage()
-                    if after_memory-before_memory > 100:
-                        logger.info(f"Memory usage: {after_memory-before_memory} MB for {type(ir)}")
-                    if len(child_paths) > 0: # 有新的分支路径需要加入，来自于internalCall和libraryCall
-                        irs.append(slitherir_parser)
-                        break
-                    irs.append(slitherir_parser)
-                if len(child_paths) > 0:
-                    break
-        # 处理当前产生的child_paths,将其加入到现有的all_paths中
-        if len(child_paths) > 0 and call_ir is not None:
-            new_all_paths_with_index = []
-            # 先将之前的所有path加入
-            for i in range(0, path_id):
-                new_all_paths_with_index.append(all_paths_with_index[i])
-            # 将child_paths和当前的path合并
-            went_path = []
-            for i in range(0, next_start_index):
-                went_path.append(path[i])
-            filtered_child_paths = []
-            if walker.record_ir(call_ir): # 如果child_function被记录过，则只保留child_paths[0], 否则保留所有child_paths
-                filtered_child_paths.append(child_paths[0])
-            else:
-                filtered_child_paths = child_paths
-            for child_path in filtered_child_paths:
-                new_path = went_path.copy()
-                for child_node in child_path:
-                    new_path.append(child_node)
-                # 将remain_irs加入new_path
-                if len(remain_irs) > 0:
-                    new_path.append(RemainNode(remain_irs))
-                # 将path之后需要继续遍历的node加入new_path
-                for i in range(next_start_index, len(path)):
-                    new_path.append(path[i])
-                new_all_paths_with_index.append((next_start_index, new_path))
-            # 将之后的所有path加入
-            if path_id < len(all_paths_with_index):
-                for i in range(path_id+1, len(all_paths_with_index)):
-                    new_all_paths_with_index.append(all_paths_with_index[i])
-            return new_all_paths_with_index, path_id
-        else:
-            return all_paths_with_index, path_id+1
-            
+        return    
     
     def record_function(self, function):
         if function.canonical_name not in self.parse_functions:
@@ -316,7 +337,9 @@ class ContractWalker:
     @staticmethod
     def deal_with_context_enter(parameters, arguments_contexts):
         for i, parameter in enumerate(parameters):
-            parameter.context["abstract"] = arguments_contexts[i]
+            parameter.context["abstract"] = arguments_contexts[i].copy()
+
+
             
 
 
