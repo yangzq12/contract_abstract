@@ -43,6 +43,7 @@ from slither.core.solidity_types.elementary_type import ElementaryType
 
 from slither.tools.contract_abstract.contract.node import StartNode, EndNode, RemainNode
 import z3
+import re
 
 class SlitherIRParser:
     def __init__(self, ir, contract_walker):
@@ -90,7 +91,7 @@ class SlitherIRParser:
                 arguments_contexts.append(argument_context)
             all_paths = []
             self.walker.get_all_paths(function.entry_point, [StartNode(function, arguments_contexts)], all_paths, self)
-            return all_paths, function
+            return all_paths, self.ir
         elif isinstance(self.ir, Return):
             self.parse_bitmap(self.ir)
         elif isinstance(self.ir, NewStructure):
@@ -246,22 +247,22 @@ class SlitherIRParser:
         elif isinstance(self.ir, HighLevelCall):
             context = AbstractContext(None, None, set(), set(), None)
             arguments = ""
-            for i, argument in enumerate(self.ir.arguments):
-                argument_context = self._deal_with_read(argument)
-                if isinstance(argument_context.storage_taints, list): # TODO: 只处理一层list
-                    for x in argument_context.storage_taints:
-                        context.storage_taints = context.storage_taints | x
-                else:
-                    context.storage_taints = context.storage_taints | argument_context.storage_taints
-                if isinstance(argument_context.input_taints, list): # TODO: 只处理一层list
-                    for x in argument_context.input_taints:
-                        context.input_taints = context.input_taints | x
-                else:
-                    context.input_taints = context.input_taints | argument_context.input_taints
-                if i == 0:
-                    arguments = arguments + str(argument_context.value)
-                else:
-                    arguments = arguments + "," + str(argument_context.value)
+            # for i, argument in enumerate(self.ir.arguments):
+            #     argument_context = self._deal_with_read(argument)
+            #     if isinstance(argument_context.storage_taints, list): # TODO: 只处理一层list
+            #         for x in argument_context.storage_taints:
+            #             context.storage_taints = context.storage_taints | x
+            #     else:
+            #         context.storage_taints = context.storage_taints | argument_context.storage_taints
+            #     if isinstance(argument_context.input_taints, list): # TODO: 只处理一层list
+            #         for x in argument_context.input_taints:
+            #             context.input_taints = context.input_taints | x
+            #     else:
+            #         context.input_taints = context.input_taints | argument_context.input_taints
+            #     if i == 0:
+            #         arguments = arguments + str(argument_context.value)
+            #     else:
+            #         arguments = arguments + "," + str(argument_context.value)
 
             destination_context = self._deal_with_read(self.ir.destination)
             context.storage_taints = context.storage_taints | destination_context.storage_taints
@@ -283,14 +284,14 @@ class SlitherIRParser:
         elif isinstance(self.ir, SolidityCall):
             context = AbstractContext(None, None, set(), set(), None)
             arguments = ""
-            for argument in self.ir.arguments:
-                argument_context = self._deal_with_read(argument)
-                context.storage_taints = context.storage_taints | argument_context.storage_taints
-                context.input_taints = context.input_taints | argument_context.input_taints
-                if argument_context.value is not None:
-                    arguments = arguments + argument_context.value + ","
-                else:
-                    arguments = arguments + ","
+            # for argument in self.ir.arguments:
+            #     argument_context = self._deal_with_read(argument)
+            #     context.storage_taints = context.storage_taints | argument_context.storage_taints
+            #     context.input_taints = context.input_taints | argument_context.input_taints
+            #     if argument_context.value is not None:
+            #         arguments = arguments + argument_context.value + ","
+            #     else:
+            #         arguments = arguments + ","
             context.value = self.ir.function.name+"("+arguments+")"
             self._deal_with_write(self.ir.lvalue, context)
         elif isinstance(self.ir, Unpack):
@@ -358,7 +359,7 @@ class SlitherIRParser:
             pass
         else:
             raise Exception(f"IR not supported: {self.ir}")
-        return [], None
+        return [], self.ir
             
     def parse_bitmap(self, ir):
         if isinstance(ir, Binary):
@@ -382,24 +383,37 @@ class SlitherIRParser:
                         ir.lvalue.context["bitmap"] = ir.variable_left.context["bitmap"] == ir.variable_right.context["bitmap"]
                     elif ir.type == BinaryType.NOT_EQUAL:
                         ir.lvalue.context["bitmap"] = ir.variable_left.context["bitmap"] != ir.variable_right.context["bitmap"]
+            else:
+                self._deal_with_constant_bitmap(ir.variable_left)
+                self._deal_with_constant_bitmap(ir.variable_right)
+                if "bitmap" in ir.variable_left.context and "bitmap" in ir.variable_right.context:
+                    if ir.type == BinaryType.ADDITION:
+                        ir.lvalue.context["bitmap"] = ir.variable_left.context["bitmap"] + ir.variable_right.context["bitmap"]
             if "bitmap" in ir.lvalue.context and ir.lvalue.context["abstract"].storage is not None and isinstance(ir.lvalue.context["abstract"].storage, str) and isinstance(ir.lvalue.type, ElementaryType):
-                self.walker.bitmaps.add(z3.simplify(ir.lvalue.context["bitmap"]))
+                self.walker.bitmaps.add((ir.node.function.full_name, z3.simplify(ir.lvalue.context["bitmap"]))) # 用ir.node.function.full_name来记录
         elif isinstance(ir, Unary):
             if ir.type == UnaryType.TILD:
                 self._deal_with_constant_bitmap(ir.rvalue)
                 if "bitmap" in ir.rvalue.context:
                     ir.lvalue.context["bitmap"] = ~ir.rvalue.context["bitmap"]
                 if "bitmap" in ir.lvalue.context and ir.lvalue.context["abstract"].storage is not None and isinstance(ir.lvalue.context["abstract"].storage, str) and isinstance(ir.lvalue.type, ElementaryType):
-                    self.walker.bitmaps.add(z3.simplify(ir.lvalue.context["bitmap"]))
+                    self.walker.bitmaps.add((ir.node.function.full_name, z3.simplify(ir.lvalue.context["bitmap"])))
         elif isinstance(ir, Return):
             for value in ir.values:
                 if "bitmap" in  value.context:
-                    self.walker.bitmaps.add(z3.simplify(value.context["bitmap"]))
+                    name = ""
+                    if isinstance(value.context["abstract"].value, str):
+                        if "MASK" in value.context["abstract"].value: #TODO: 硬编码
+                            masks = re.split('[()]', value.context["abstract"].value)
+                            for mask in masks:
+                                if "MASK" in mask:
+                                    name = mask.replace("MASK", "")
+                        self.walker.bitmaps.add((name, z3.simplify(value.context["bitmap"]))) #用valualbe的value带mask的情况
         elif isinstance(ir, Assignment):
             if "bitmap" in ir.rvalue.context:
                 ir.lvalue.context["bitmap"] = ir.rvalue.context["bitmap"]
                 if ir.lvalue.context["abstract"].storage is not None and isinstance(ir.lvalue.context["abstract"].storage, str) and isinstance(ir.lvalue.type, ElementaryType):
-                    self.walker.bitmaps.add(z3.simplify(ir.lvalue.context["bitmap"]))
+                    self.walker.bitmaps.add((ir.node.function.full_name, z3.simplify(ir.lvalue.context["bitmap"])))
 
                 
     

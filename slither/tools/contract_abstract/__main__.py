@@ -112,6 +112,7 @@ def main() -> None:
         slither = Slither(source_code, **vars(args))
     else:
         target = args.contract_source[0]
+        source_code = None
         slither = Slither(target, **vars(args))
 
     if args.rpc_url:
@@ -129,7 +130,7 @@ def main() -> None:
 
     # 获取合约的storage信息
     entity = Entity(target, primary_contract)
-    storage_meta_json =entity.get_storage_meta() 
+    entity.get_storage_meta() 
 
     # 通过对合约的所有entry的函数
     contract_walker = ContractWalker(primary_contract, entity)
@@ -138,7 +139,7 @@ def main() -> None:
 
     #输出最终的meta.json的结构
     result = {}
-    result[primary_contract.name]={"entities" : storage_meta_json, "address": args.contract_source[0]}
+    result[primary_contract.name]={"entities" : entity.storage_meta, "address": args.contract_source[0]}
 
     get_contract_from_name(slither, primary_contract.name)
 

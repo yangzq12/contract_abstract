@@ -1,5 +1,5 @@
 {
-    "Pool": {
+    "PoolInstance": {
         "entities": {
             "lastInitializedRevision": {
                 "dataType": "uint256",
@@ -70,14 +70,40 @@
                                                             "dataMeta": {
                                                                 "fields": [
                                                                     {
-                                                                        "name": "liquidationThreshold",
+                                                                        "name": "decimals",
                                                                         "type": {
                                                                             "dataType": "uint256",
                                                                             "dataMeta": {
                                                                                 "size": 256,
                                                                                 "offset": [
-                                                                                    31,
-                                                                                    16
+                                                                                    55,
+                                                                                    48
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "liquidationBonus",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    47,
+                                                                                    32
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "debtCeiling",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    251,
+                                                                                    212
                                                                                 ]
                                                                             }
                                                                         }
@@ -96,40 +122,27 @@
                                                                         }
                                                                     },
                                                                     {
-                                                                        "name": "borrowCap",
+                                                                        "name": "liquidationThreshold",
                                                                         "type": {
                                                                             "dataType": "uint256",
                                                                             "dataMeta": {
                                                                                 "size": 256,
                                                                                 "offset": [
-                                                                                    115,
-                                                                                    80
+                                                                                    31,
+                                                                                    16
                                                                                 ]
                                                                             }
                                                                         }
                                                                     },
                                                                     {
-                                                                        "name": "supplyCap",
+                                                                        "name": "borrowableInIsolation",
                                                                         "type": {
                                                                             "dataType": "uint256",
                                                                             "dataMeta": {
                                                                                 "size": 256,
                                                                                 "offset": [
-                                                                                    151,
-                                                                                    116
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "unbackedMintCap",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    211,
-                                                                                    176
+                                                                                    61,
+                                                                                    61
                                                                                 ]
                                                                             }
                                                                         }
@@ -174,14 +187,27 @@
                                                                         }
                                                                     },
                                                                     {
-                                                                        "name": "decimals",
+                                                                        "name": "frozen",
                                                                         "type": {
                                                                             "dataType": "uint256",
                                                                             "dataMeta": {
                                                                                 "size": 256,
                                                                                 "offset": [
-                                                                                    55,
-                                                                                    48
+                                                                                    57,
+                                                                                    57
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "borrowCap",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    115,
+                                                                                    80
                                                                                 ]
                                                                             }
                                                                         }
@@ -195,58 +221,6 @@
                                                                                 "offset": [
                                                                                     60,
                                                                                     60
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "borrowing",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    58,
-                                                                                    58
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "liquidationBonus",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    47,
-                                                                                    32
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "emodeCategory",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    175,
-                                                                                    168
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "frozen",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    57,
-                                                                                    57
                                                                                 ]
                                                                             }
                                                                         }
@@ -278,40 +252,27 @@
                                                                         }
                                                                     },
                                                                     {
-                                                                        "name": "debtCeiling",
+                                                                        "name": "supplyCap",
                                                                         "type": {
                                                                             "dataType": "uint256",
                                                                             "dataMeta": {
                                                                                 "size": 256,
                                                                                 "offset": [
-                                                                                    251,
-                                                                                    212
+                                                                                    151,
+                                                                                    116
                                                                                 ]
                                                                             }
                                                                         }
                                                                     },
                                                                     {
-                                                                        "name": "stableBorrowing",
+                                                                        "name": "borrowing",
                                                                         "type": {
                                                                             "dataType": "uint256",
                                                                             "dataMeta": {
                                                                                 "size": 256,
                                                                                 "offset": [
-                                                                                    59,
-                                                                                    59
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "borrowableInIsolation",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    61,
-                                                                                    61
+                                                                                    58,
+                                                                                    58
                                                                                 ]
                                                                             }
                                                                         }
@@ -362,7 +323,7 @@
                                     }
                                 },
                                 {
-                                    "name": "currentStableBorrowRate",
+                                    "name": "deficit",
                                     "type": {
                                         "dataType": "uint128",
                                         "dataMeta": {
@@ -389,6 +350,15 @@
                                     }
                                 },
                                 {
+                                    "name": "liquidationGracePeriodUntil",
+                                    "type": {
+                                        "dataType": "uint40",
+                                        "dataMeta": {
+                                            "size": 5
+                                        }
+                                    }
+                                },
+                                {
                                     "name": "aTokenAddress",
                                     "type": {
                                         "dataType": "address",
@@ -398,7 +368,7 @@
                                     }
                                 },
                                 {
-                                    "name": "stableDebtTokenAddress",
+                                    "name": "__deprecatedStableDebtTokenAddress",
                                     "type": {
                                         "dataType": "address",
                                         "dataMeta": {
@@ -416,7 +386,7 @@
                                     }
                                 },
                                 {
-                                    "name": "interestRateStrategyAddress",
+                                    "name": "__deprecatedInterestRateStrategyAddress",
                                     "type": {
                                         "dataType": "address",
                                         "dataMeta": {
@@ -434,7 +404,7 @@
                                     }
                                 },
                                 {
-                                    "name": "unbacked",
+                                    "name": "virtualUnderlyingBalance",
                                     "type": {
                                         "dataType": "uint128",
                                         "dataMeta": {
@@ -444,6 +414,15 @@
                                 },
                                 {
                                     "name": "isolationModeTotalDebt",
+                                    "type": {
+                                        "dataType": "uint128",
+                                        "dataMeta": {
+                                            "size": 16
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "__deprecatedVirtualUnderlyingBalance",
                                     "type": {
                                         "dataType": "uint128",
                                         "dataMeta": {
@@ -490,22 +469,22 @@
                                                     "dataMeta": {
                                                         "fields": [
                                                             {
-                                                                "name": "Borrowing(DataTypes.UserConfigurationMap,uint256,bool)",
-                                                                "type": {
-                                                                    "dataType": "bool",
-                                                                    "dataMeta": {
-                                                                        "size": 1,
-                                                                        "offset": 0
-                                                                    }
-                                                                }
-                                                            },
-                                                            {
-                                                                "name": "UsingAsCollateral(DataTypes.UserConfigurationMap,uint256,bool)",
+                                                                "name": "UsingAsCollateral",
                                                                 "type": {
                                                                     "dataType": "bool",
                                                                     "dataMeta": {
                                                                         "size": 1,
                                                                         "offset": 1
+                                                                    }
+                                                                }
+                                                            },
+                                                            {
+                                                                "name": "Borrowing",
+                                                                "type": {
+                                                                    "dataType": "bool",
+                                                                    "dataMeta": {
+                                                                        "size": 1,
+                                                                        "offset": 0
                                                                     }
                                                                 }
                                                             }
@@ -588,11 +567,11 @@
                                     }
                                 },
                                 {
-                                    "name": "priceSource",
+                                    "name": "collateralBitmap",
                                     "type": {
-                                        "dataType": "address",
+                                        "dataType": "uint128",
                                         "dataMeta": {
-                                            "size": 20
+                                            "size": 16
                                         }
                                     }
                                 },
@@ -602,6 +581,15 @@
                                         "dataType": "string",
                                         "dataMeta": {
                                             "size": 32
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "borrowableBitmap",
+                                    "type": {
+                                        "dataType": "uint128",
+                                        "dataMeta": {
+                                            "size": 16
                                         }
                                     }
                                 }
@@ -635,7 +623,7 @@
                     "offset": 0
                 }
             },
-            "_bridgeProtocolFee": {
+            "__DEPRECATED_bridgeProtocolFee": {
                 "dataType": "uint256",
                 "dataMeta": {
                     "size": 32
@@ -645,7 +633,7 @@
                     "offset": 0
                 }
             },
-            "_flashLoanPremiumTotal": {
+            "_flashLoanPremium": {
                 "dataType": "uint128",
                 "dataMeta": {
                     "size": 16
@@ -655,7 +643,7 @@
                     "offset": 0
                 }
             },
-            "_flashLoanPremiumToProtocol": {
+            "__DEPRECATED_flashLoanPremiumToProtocol": {
                 "dataType": "uint128",
                 "dataMeta": {
                     "size": 16
@@ -665,7 +653,7 @@
                     "offset": 16
                 }
             },
-            "_maxStableRateBorrowSizePercent": {
+            "__DEPRECATED_maxStableRateBorrowSizePercent": {
                 "dataType": "uint64",
                 "dataMeta": {
                     "size": 8
@@ -683,6 +671,38 @@
                 "storageInfo": {
                     "slot": 59,
                     "offset": 8
+                }
+            },
+            "_positionManager": {
+                "dataType": "mapping",
+                "dataMeta": {
+                    "key": {
+                        "dataType": "address",
+                        "dataMeta": {
+                            "size": 20
+                        }
+                    },
+                    "value": {
+                        "dataType": "mapping",
+                        "dataMeta": {
+                            "key": {
+                                "dataType": "address",
+                                "dataMeta": {
+                                    "size": 20
+                                }
+                            },
+                            "value": {
+                                "dataType": "bool",
+                                "dataMeta": {
+                                    "size": 1
+                                }
+                            }
+                        }
+                    }
+                },
+                "storageInfo": {
+                    "slot": 60,
+                    "offset": 0
                 }
             }
         },
