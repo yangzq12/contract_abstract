@@ -9,7 +9,8 @@
                 "storageInfo": {
                     "slot": 0,
                     "offset": 0
-                }
+                },
+                "read": true
             },
             "initializing": {
                 "dataType": "bool",
@@ -19,7 +20,8 @@
                 "storageInfo": {
                     "slot": 1,
                     "offset": 0
-                }
+                },
+                "read": true
             },
             "______gap": {
                 "dataType": "staticArray",
@@ -70,40 +72,14 @@
                                                             "dataMeta": {
                                                                 "fields": [
                                                                     {
-                                                                        "name": "liquidationThreshold",
+                                                                        "name": "debtCeiling",
                                                                         "type": {
                                                                             "dataType": "uint256",
                                                                             "dataMeta": {
                                                                                 "size": 256,
                                                                                 "offset": [
-                                                                                    31,
-                                                                                    16
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "flashloanEnabled",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    63,
-                                                                                    63
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "borrowCap",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    115,
-                                                                                    80
+                                                                                    251,
+                                                                                    212
                                                                                 ]
                                                                             }
                                                                         }
@@ -122,53 +98,40 @@
                                                                         }
                                                                     },
                                                                     {
-                                                                        "name": "unbackedMintCap",
+                                                                        "name": "frozen",
                                                                         "type": {
                                                                             "dataType": "uint256",
                                                                             "dataMeta": {
                                                                                 "size": 256,
                                                                                 "offset": [
-                                                                                    211,
-                                                                                    176
+                                                                                    57,
+                                                                                    57
                                                                                 ]
                                                                             }
                                                                         }
                                                                     },
                                                                     {
-                                                                        "name": "liquidationProtocolFee",
+                                                                        "name": "liquidationThreshold",
                                                                         "type": {
                                                                             "dataType": "uint256",
                                                                             "dataMeta": {
                                                                                 "size": 256,
                                                                                 "offset": [
-                                                                                    167,
-                                                                                    152
+                                                                                    31,
+                                                                                    16
                                                                                 ]
                                                                             }
                                                                         }
                                                                     },
                                                                     {
-                                                                        "name": "siloedBorrowing",
+                                                                        "name": "borrowCap",
                                                                         "type": {
                                                                             "dataType": "uint256",
                                                                             "dataMeta": {
                                                                                 "size": 256,
                                                                                 "offset": [
-                                                                                    62,
-                                                                                    62
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "ltv",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    15,
-                                                                                    0
+                                                                                    115,
+                                                                                    80
                                                                                 ]
                                                                             }
                                                                         }
@@ -187,6 +150,19 @@
                                                                         }
                                                                     },
                                                                     {
+                                                                        "name": "stableBorrowing",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    59,
+                                                                                    59
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
                                                                         "name": "paused",
                                                                         "type": {
                                                                             "dataType": "uint256",
@@ -195,71 +171,6 @@
                                                                                 "offset": [
                                                                                     60,
                                                                                     60
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "borrowing",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    58,
-                                                                                    58
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "liquidationBonus",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    47,
-                                                                                    32
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "emodeCategory",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    175,
-                                                                                    168
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "frozen",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    57,
-                                                                                    57
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "active",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    56,
-                                                                                    56
                                                                                 ]
                                                                             }
                                                                         }
@@ -278,27 +189,53 @@
                                                                         }
                                                                     },
                                                                     {
-                                                                        "name": "debtCeiling",
+                                                                        "name": "ltv",
                                                                         "type": {
                                                                             "dataType": "uint256",
                                                                             "dataMeta": {
                                                                                 "size": 256,
                                                                                 "offset": [
-                                                                                    251,
-                                                                                    212
+                                                                                    15,
+                                                                                    0
                                                                                 ]
                                                                             }
                                                                         }
                                                                     },
                                                                     {
-                                                                        "name": "stableBorrowing",
+                                                                        "name": "active",
                                                                         "type": {
                                                                             "dataType": "uint256",
                                                                             "dataMeta": {
                                                                                 "size": 256,
                                                                                 "offset": [
-                                                                                    59,
-                                                                                    59
+                                                                                    56,
+                                                                                    56
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "liquidationProtocolFee",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    167,
+                                                                                    152
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "borrowing",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    58,
+                                                                                    58
                                                                                 ]
                                                                             }
                                                                         }
@@ -315,10 +252,76 @@
                                                                                 ]
                                                                             }
                                                                         }
+                                                                    },
+                                                                    {
+                                                                        "name": "emodeCategory",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    175,
+                                                                                    168
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "flashloanEnabled",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    63,
+                                                                                    63
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "unbackedMintCap",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    211,
+                                                                                    176
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "siloedBorrowing",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    62,
+                                                                                    62
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "liquidationBonus",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    47,
+                                                                                    32
+                                                                                ]
+                                                                            }
+                                                                        }
                                                                     }
                                                                 ]
                                                             }
-                                                        }
+                                                        },
+                                                        "read": true
                                                     }
                                                 }
                                             ]
@@ -331,7 +334,8 @@
                                         "dataType": "uint128",
                                         "dataMeta": {
                                             "size": 16
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -340,7 +344,8 @@
                                         "dataType": "uint128",
                                         "dataMeta": {
                                             "size": 16
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -349,7 +354,8 @@
                                         "dataType": "uint128",
                                         "dataMeta": {
                                             "size": 16
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -358,7 +364,8 @@
                                         "dataType": "uint128",
                                         "dataMeta": {
                                             "size": 16
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -367,7 +374,8 @@
                                         "dataType": "uint128",
                                         "dataMeta": {
                                             "size": 16
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -376,7 +384,8 @@
                                         "dataType": "uint40",
                                         "dataMeta": {
                                             "size": 5
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -385,7 +394,8 @@
                                         "dataType": "uint16",
                                         "dataMeta": {
                                             "size": 2
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -393,8 +403,10 @@
                                     "type": {
                                         "dataType": "address",
                                         "dataMeta": {
-                                            "size": 20
-                                        }
+                                            "size": 20,
+                                            "interface": "IAToken"
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -402,8 +414,10 @@
                                     "type": {
                                         "dataType": "address",
                                         "dataMeta": {
-                                            "size": 20
-                                        }
+                                            "size": 20,
+                                            "interface": "IStableDebtToken"
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -411,8 +425,10 @@
                                     "type": {
                                         "dataType": "address",
                                         "dataMeta": {
-                                            "size": 20
-                                        }
+                                            "size": 20,
+                                            "interface": "IVariableDebtToken"
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -420,8 +436,10 @@
                                     "type": {
                                         "dataType": "address",
                                         "dataMeta": {
-                                            "size": 20
-                                        }
+                                            "size": 20,
+                                            "interface": "IReserveInterestRateStrategy"
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -430,7 +448,8 @@
                                         "dataType": "uint128",
                                         "dataMeta": {
                                             "size": 16
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -439,7 +458,8 @@
                                         "dataType": "uint128",
                                         "dataMeta": {
                                             "size": 16
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -448,7 +468,8 @@
                                         "dataType": "uint128",
                                         "dataMeta": {
                                             "size": 16
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 }
                             ]
@@ -490,17 +511,7 @@
                                                     "dataMeta": {
                                                         "fields": [
                                                             {
-                                                                "name": "Borrowing(DataTypes.UserConfigurationMap,uint256,bool)",
-                                                                "type": {
-                                                                    "dataType": "bool",
-                                                                    "dataMeta": {
-                                                                        "size": 1,
-                                                                        "offset": 0
-                                                                    }
-                                                                }
-                                                            },
-                                                            {
-                                                                "name": "UsingAsCollateral(DataTypes.UserConfigurationMap,uint256,bool)",
+                                                                "name": "UsingAsCollateral",
                                                                 "type": {
                                                                     "dataType": "bool",
                                                                     "dataMeta": {
@@ -508,12 +519,23 @@
                                                                         "offset": 1
                                                                     }
                                                                 }
+                                                            },
+                                                            {
+                                                                "name": "Borrowing",
+                                                                "type": {
+                                                                    "dataType": "bool",
+                                                                    "dataMeta": {
+                                                                        "size": 1,
+                                                                        "offset": 0
+                                                                    }
+                                                                }
                                                             }
                                                         ]
                                                     }
                                                 }
                                             }
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 }
                             ]
@@ -538,7 +560,8 @@
                         "dataType": "address",
                         "dataMeta": {
                             "size": 20
-                        }
+                        },
+                        "read": true
                     }
                 },
                 "storageInfo": {
@@ -566,7 +589,8 @@
                                         "dataType": "uint16",
                                         "dataMeta": {
                                             "size": 2
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -575,7 +599,8 @@
                                         "dataType": "uint16",
                                         "dataMeta": {
                                             "size": 2
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -584,7 +609,8 @@
                                         "dataType": "uint16",
                                         "dataMeta": {
                                             "size": 2
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -593,7 +619,8 @@
                                         "dataType": "address",
                                         "dataMeta": {
                                             "size": 20
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -627,7 +654,8 @@
                         "dataType": "uint8",
                         "dataMeta": {
                             "size": 1
-                        }
+                        },
+                        "read": true
                     }
                 },
                 "storageInfo": {
@@ -643,7 +671,8 @@
                 "storageInfo": {
                     "slot": 57,
                     "offset": 0
-                }
+                },
+                "read": true
             },
             "_flashLoanPremiumTotal": {
                 "dataType": "uint128",
@@ -653,7 +682,8 @@
                 "storageInfo": {
                     "slot": 58,
                     "offset": 0
-                }
+                },
+                "read": true
             },
             "_flashLoanPremiumToProtocol": {
                 "dataType": "uint128",
@@ -663,7 +693,8 @@
                 "storageInfo": {
                     "slot": 58,
                     "offset": 16
-                }
+                },
+                "read": true
             },
             "_maxStableRateBorrowSizePercent": {
                 "dataType": "uint64",
@@ -673,7 +704,8 @@
                 "storageInfo": {
                     "slot": 59,
                     "offset": 0
-                }
+                },
+                "read": true
             },
             "_reservesCount": {
                 "dataType": "uint16",
@@ -683,9 +715,358 @@
                 "storageInfo": {
                     "slot": 59,
                     "offset": 8
-                }
+                },
+                "read": true
             }
         },
-        "address": "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2"
+        "address": "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
+        "constants": {
+            "Pool": [
+                {
+                    "name": "ADDRESSES_PROVIDER",
+                    "value": null,
+                    "type": {
+                        "dataType": "address",
+                        "dataMeta": {
+                            "size": 160,
+                            "interface": "IPoolAddressesProvider"
+                        }
+                    }
+                },
+                {
+                    "name": "POOL_REVISION",
+                    "value": 1,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                }
+            ],
+            "ReserveConfiguration": [
+                {
+                    "name": "RESERVE_FACTOR_START_BIT_POSITION",
+                    "value": 64,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "SUPPLY_CAP_START_BIT_POSITION",
+                    "value": 116,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "RESERVE_DECIMALS_START_BIT_POSITION",
+                    "value": 48,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "UNBACKED_MINT_CAP_START_BIT_POSITION",
+                    "value": 176,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "DEBT_CEILING_START_BIT_POSITION",
+                    "value": 212,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "BORROW_CAP_START_BIT_POSITION",
+                    "value": 80,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "EMODE_CATEGORY_START_BIT_POSITION",
+                    "value": 168,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "LIQUIDATION_THRESHOLD_START_BIT_POSITION",
+                    "value": 16,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "LIQUIDATION_BONUS_START_BIT_POSITION",
+                    "value": 32,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "LIQUIDATION_PROTOCOL_FEE_START_BIT_POSITION",
+                    "value": 152,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                }
+            ],
+            "WadRayMath": [
+                {
+                    "name": "HALF_RAY",
+                    "value": 500000000000000000000000000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "RAY",
+                    "value": 1000000000000000000000000000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "WAD_RAY_RATIO",
+                    "value": 1000000000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "WAD",
+                    "value": 1000000000000000000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                }
+            ],
+            "MathUtils": [
+                {
+                    "name": "SECONDS_PER_YEAR",
+                    "value": 31536000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                }
+            ],
+            "PercentageMath": [
+                {
+                    "name": "HALF_PERCENTAGE_FACTOR",
+                    "value": 5000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "PERCENTAGE_FACTOR",
+                    "value": 10000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                }
+            ],
+            "ValidationLogic": [
+                {
+                    "name": "HEALTH_FACTOR_LIQUIDATION_THRESHOLD",
+                    "value": 1000000000000000000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "REBALANCE_UP_LIQUIDITY_RATE_THRESHOLD",
+                    "value": 9000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD",
+                    "value": 950000000000000000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                }
+            ],
+            "LiquidationLogic": [
+                {
+                    "name": "CLOSE_FACTOR_HF_THRESHOLD",
+                    "value": 950000000000000000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "DEFAULT_LIQUIDATION_CLOSE_FACTOR",
+                    "value": 5000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "MAX_LIQUIDATION_CLOSE_FACTOR",
+                    "value": 10000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                }
+            ]
+        },
+        "interfaces": {
+            "IPoolAddressesProvider": [
+                "getMarketId() returns(string)",
+                "setMarketId(string) returns()",
+                "getAddress(bytes32) returns(address)",
+                "setAddressAsProxy(bytes32,address) returns()",
+                "setAddress(bytes32,address) returns()",
+                "getPool() returns(address)",
+                "setPoolImpl(address) returns()",
+                "getPoolConfigurator() returns(address)",
+                "setPoolConfiguratorImpl(address) returns()",
+                "getPriceOracle() returns(address)",
+                "setPriceOracle(address) returns()",
+                "getACLManager() returns(address)",
+                "setACLManager(address) returns()",
+                "getACLAdmin() returns(address)",
+                "setACLAdmin(address) returns()",
+                "getPriceOracleSentinel() returns(address)",
+                "setPriceOracleSentinel(address) returns()",
+                "getPoolDataProvider() returns(address)",
+                "setPoolDataProvider(address) returns()"
+            ],
+            "IVariableDebtToken": [
+                "mint(address,address,uint256,uint256) returns(bool,uint256)",
+                "burn(address,uint256,uint256) returns(uint256)",
+                "UNDERLYING_ASSET_ADDRESS() returns(address)"
+            ],
+            "IStableDebtToken": [
+                "mint(address,address,uint256,uint256) returns(bool,uint256,uint256)",
+                "burn(address,uint256) returns(uint256,uint256)",
+                "getAverageStableRate() returns(uint256)",
+                "getUserStableRate(address) returns(uint256)",
+                "getUserLastUpdated(address) returns(uint40)",
+                "getSupplyData() returns(uint256,uint256,uint256,uint40)",
+                "getTotalSupplyLastUpdated() returns(uint40)",
+                "getTotalSupplyAndAvgRate() returns(uint256,uint256)",
+                "principalBalanceOf(address) returns(uint256)",
+                "UNDERLYING_ASSET_ADDRESS() returns(address)"
+            ],
+            "IAToken": [
+                "mint(address,address,uint256,uint256) returns(bool)",
+                "burn(address,address,uint256,uint256) returns()",
+                "mintToTreasury(uint256,uint256) returns()",
+                "transferOnLiquidation(address,address,uint256) returns()",
+                "transferUnderlyingTo(address,uint256) returns()",
+                "handleRepayment(address,address,uint256) returns()",
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32) returns()",
+                "UNDERLYING_ASSET_ADDRESS() returns(address)",
+                "RESERVE_TREASURY_ADDRESS() returns(address)",
+                "DOMAIN_SEPARATOR() returns(bytes32)",
+                "nonces(address) returns(uint256)",
+                "rescueTokens(address,address,uint256) returns()"
+            ],
+            "IReserveInterestRateStrategy": [
+                "calculateInterestRates(DataTypes.CalculateInterestRatesParams) returns(uint256,uint256,uint256)"
+            ]
+        }
     }
 }

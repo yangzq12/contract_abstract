@@ -139,7 +139,7 @@ def main() -> None:
 
     #输出最终的meta.json的结构
     result = {}
-    result[primary_contract.name]={"entities" : entity.storage_meta, "address": args.contract_source[0]}
+    result[primary_contract.name]={"entities" : entity.storage_meta, "address": args.contract_source[0], "constants": contract_walker.constants, "interfaces": contract_walker.interfaces}
 
     get_contract_from_name(slither, primary_contract.name)
 

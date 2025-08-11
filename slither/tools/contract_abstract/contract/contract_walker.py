@@ -22,13 +22,16 @@ class ContractWalker:
         self.parse_irs = set()
         self.read_storages = {} # 某个function所有的读的storage，key是function的name，value是set(storage_name)
         self.write_storages = {} # 某个function所有的写的storage，key是function的name，value是set(storage_name)
+        self.function_write_storage = {} # 某个function所有的写的storage，key是function的name，value是set(storage_name), storage_name精确到字段
+        self.constants = {} # 某个合约的常量，key是合约，value是数组，每个元素是{"name": name, "value": value, "type": {"dataType": "uint256", "dataMeta": {"size": 256}}}
 
         self.current_function = None
+        self.interfaces = {} # 某个合约的interface，key是合约，value是interfaces
 
     def walk(self):
         for function in self.contract.functions_entry_points:
-            self.read_storages[function.canonical_name] = set()
-            self.write_storages[function.canonical_name] = set()
+            self.read_storages[function] = set()
+            self.write_storages[function] = set()
             self.current_function = function
 
             arguments_contexts = []
@@ -48,7 +51,7 @@ class ContractWalker:
                 all_paths_with_index.append((0, path))
             while path_id < len(all_paths_with_index):
                 all_paths_with_index, new_path_id = self.walk_path(all_paths_with_index[path_id], self, all_paths_with_index, path_id)
-                if new_path_id > path_id and new_path_id < len(all_paths_with_index):
+                if new_path_id > path_id:
                     # 清除本次路径产生的abstract context
                     for node in all_paths_with_index[path_id][1]:
                         if not isinstance(node, StartNode) and not isinstance(node, EndNode):
@@ -59,20 +62,13 @@ class ContractWalker:
                         storage.context["abstract"] = AbstractContext(None, storage.name, set(), {storage.name}, storage.name)
                 path_id = new_path_id
             # 清除函数间可能互相影响的相关状态
-            self.parse_irs = set()
+            # self.parse_irs = set()
         self.analyse_bitmap()
+        self.filter_storage()
+        self.function_write_storage = self.collect_function_write_storage()
+        
+        
         return
-        for path_with_index in all_paths_with_index:
-            path = path_with_index[1]
-            function_path = self.print_function_path(path)
-            for i, stack in enumerate(function_path):
-                function_set = set()
-                for function in stack:
-                    function_set.add(function)
-                if len(function_set) != len(stack):
-                    return stack
-        return []
-    
     def walk_path(self, path_with_index, walker, all_paths_with_index, path_id):
         start_index = path_with_index[0]
         path = path_with_index[1]
@@ -196,6 +192,23 @@ class ContractWalker:
                 else:
                     raise Exception("Unsupported bitmap: {bitmap}")    
                 print(patterns)
+
+    def filter_storage(self):
+        for function in self.read_storages:
+            for storage in self.read_storages[function]:
+                meta = self.entity.get_field_from_name(storage, self.entity.storage_meta)
+                if meta["dataType"] not in ["struct", "staticArray", "mapping"]:
+                    meta["read"] = True
+
+    def collect_function_write_storage(self):
+        for function in self.write_storages:
+            for storage in self.write_storages[function]:
+                meta = self.entity.get_field_from_name(storage, self.entity.storage_meta)
+                if meta["dataType"] not in ["struct", "staticArray", "mapping"]:
+                    if function.full_name not in self.function_write_storage:
+                        self.function_write_storage[function.full_name] = set()
+                    self.function_write_storage[function.full_name].add(storage)
+
 
     @staticmethod
     def get_pattern_mode(patterns):

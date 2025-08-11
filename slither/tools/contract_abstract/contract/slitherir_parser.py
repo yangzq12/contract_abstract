@@ -44,6 +44,12 @@ from slither.core.solidity_types.elementary_type import ElementaryType
 from slither.tools.contract_abstract.contract.node import StartNode, EndNode, RemainNode
 import z3
 import re
+import logging
+
+logging.basicConfig()
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 
 class SlitherIRParser:
     def __init__(self, ir, contract_walker):
@@ -251,6 +257,7 @@ class SlitherIRParser:
             lvalue = self.ir.lvalue
             context = self._deal_with_read(self.ir.variable)
             self._deal_with_write(lvalue, context)
+            self._parse_address_type(self.ir.variable, lvalue)
         elif isinstance(self.ir, HighLevelCall):
             context = AbstractContext(None, None, set(), set(), None)
             arguments = ""
@@ -368,6 +375,22 @@ class SlitherIRParser:
         else:
             raise Exception(f"IR not supported: {self.ir}")
         return [], self.ir, False
+
+    def _parse_address_type(self, variable, lvalue):
+        if isinstance(variable, Contract):
+            pass # TODO:暂时不处理contract的address类型
+        elif isinstance(variable.type, ElementaryType) and variable.type.type == "address":
+            context = self._deal_with_read(variable)
+            if context.storage is not None and isinstance(context.storage, str):
+                meta = self.walker.entity.get_field_from_name(context.storage, self.walker.entity.storage_meta)
+                if meta["dataType"] == "address" and ("interface" not in meta["dataMeta"] or meta["dataMeta"]["interface"] is None):
+                    if isinstance(lvalue.type, UserDefinedType) and isinstance(lvalue.type.type, Contract):
+                        interface_name = lvalue.type.type.name
+                        self.walker.interfaces[interface_name] = []
+                        for function in lvalue.type.type.functions_declared:
+                            self.walker.interfaces[interface_name].append(function.signature_str)
+                        meta["dataMeta"]["interface"] = interface_name
+                
 
     @staticmethod
     def clear_context(ir, storages):
@@ -507,6 +530,7 @@ class SlitherIRParser:
             if isinstance(variable, SolidityVariableComposed):
                 return AbstractContext(variable.name, None, {variable.name}, set(), variable.name)
             elif isinstance(variable, StateVariable) and (variable.is_immutable or variable.is_constant):
+                self._record_constant(variable)
                 return AbstractContext(None, None, set(), set(), variable.name)               
             elif isinstance(variable, LocalVariable) and variable.location == "memory": #临时申请的memroy变量，在没有初始化之前是没有任何值的
                 return AbstractContext(None, None, set(), set(), None)
@@ -523,15 +547,54 @@ class SlitherIRParser:
             else:
                 raise Exception(f"Abstract context not found for {variable.name}")
         # 记录读的storage
-        self.record_storage(self.walker.read_storages[self.walker.current_function.canonical_name], variable.context["abstract"])
+        self.record_storage(self.walker.read_storages[self.walker.current_function], variable.context["abstract"])
         return variable.context["abstract"]
 
+    def _record_constant(self, variable):
+        if self._filter_constant(variable):
+            return
+        canonical_name = variable.canonical_name
+        function_name = canonical_name.split(".")[0]
+        constant_name = canonical_name.split(".")[1]  
+        interface = None
+        if isinstance(variable.type.type, Contract):
+            constant_type = "address"
+            constant_size = 160
+            interface = variable.type.type.name
+            self.walker.interfaces[variable.type.type.name] = []
+            for function in variable.type.type.functions_declared:
+                self.walker.interfaces[variable.type.type.name].append(function.signature_str)
+        elif isinstance(variable.type, ElementaryType):
+            constant_type = variable.type.type
+            constant_size = variable.type.size
+        else:
+            raise Exception(f"Constant type not supported for {variable.name}")
+        constant_value = None
+        if variable.initialized:
+            ir = variable.node_initialization.irs[0] #只处理直接赋值常量的形式
+            if isinstance(ir, Assignment) and isinstance(ir.rvalue, Constant) and isinstance(ir.rvalue.type, ElementaryType):   
+                constant_value = ir.rvalue.value
+        if function_name not in self.walker.constants:
+            self.walker.constants[function_name] = []
+        for constant in self.walker.constants[function_name]:
+            if constant["name"] == constant_name:
+                return
+        self.walker.constants[function_name].append({"name": constant_name, "value": constant_value, "type": {"dataType": constant_type, "dataMeta": {"size": constant_size, "interface": interface}}})
+
+    def _filter_constant(self, variable): # TODO: 先简单进行过滤不必要的用于内部服务的constant
+        if "MASK" in variable.name or "BIT_POSITION" in variable.name:
+            return True
+        else:
+            return False
+
     def _deal_with_write(self, lvalue, context):
+        if isinstance(lvalue, StateVariable) and (lvalue.is_immutable or lvalue.is_constant):
+            self._record_constant(lvalue)
         if lvalue is not None:
             lvalue.context["abstract"] = context
             self.lvalues.append(lvalue)
             # 记录写的storage
-            self.record_storage(self.walker.write_storages[self.walker.current_function.canonical_name], context)
+            self.record_storage(self.walker.write_storages[self.walker.current_function], context)
 
 
     def record_storage(self, collect, context):
@@ -644,7 +707,7 @@ class SlitherIRParser:
                         else:
                             points_to_context.value.append(None)
                 #记录写storage
-                self.record_storage(self.walker.write_storages[self.walker.current_function.canonical_name], points_to_context)
+                self.record_storage(self.walker.write_storages[self.walker.current_function], points_to_context)
         
     def contintue_internal_call(self, return_variables):
         if return_variables is not None:

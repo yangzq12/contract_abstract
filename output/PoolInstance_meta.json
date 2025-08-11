@@ -9,7 +9,8 @@
                 "storageInfo": {
                     "slot": 0,
                     "offset": 0
-                }
+                },
+                "read": true
             },
             "initializing": {
                 "dataType": "bool",
@@ -19,7 +20,8 @@
                 "storageInfo": {
                     "slot": 1,
                     "offset": 0
-                }
+                },
+                "read": true
             },
             "______gap": {
                 "dataType": "staticArray",
@@ -70,27 +72,14 @@
                                                             "dataMeta": {
                                                                 "fields": [
                                                                     {
-                                                                        "name": "decimals",
+                                                                        "name": "siloedBorrowing",
                                                                         "type": {
                                                                             "dataType": "uint256",
                                                                             "dataMeta": {
                                                                                 "size": 256,
                                                                                 "offset": [
-                                                                                    55,
-                                                                                    48
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "liquidationBonus",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    47,
-                                                                                    32
+                                                                                    62,
+                                                                                    62
                                                                                 ]
                                                                             }
                                                                         }
@@ -109,6 +98,19 @@
                                                                         }
                                                                     },
                                                                     {
+                                                                        "name": "decimals",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    55,
+                                                                                    48
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
                                                                         "name": "flashloanEnabled",
                                                                         "type": {
                                                                             "dataType": "uint256",
@@ -122,14 +124,53 @@
                                                                         }
                                                                     },
                                                                     {
-                                                                        "name": "liquidationThreshold",
+                                                                        "name": "frozen",
                                                                         "type": {
                                                                             "dataType": "uint256",
                                                                             "dataMeta": {
                                                                                 "size": 256,
                                                                                 "offset": [
-                                                                                    31,
-                                                                                    16
+                                                                                    57,
+                                                                                    57
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "supplyCap",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    151,
+                                                                                    116
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "ltv",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    15,
+                                                                                    0
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "active",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    56,
+                                                                                    56
                                                                                 ]
                                                                             }
                                                                         }
@@ -161,40 +202,14 @@
                                                                         }
                                                                     },
                                                                     {
-                                                                        "name": "siloedBorrowing",
+                                                                        "name": "borrowing",
                                                                         "type": {
                                                                             "dataType": "uint256",
                                                                             "dataMeta": {
                                                                                 "size": 256,
                                                                                 "offset": [
-                                                                                    62,
-                                                                                    62
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "ltv",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    15,
-                                                                                    0
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "frozen",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    57,
-                                                                                    57
+                                                                                    58,
+                                                                                    58
                                                                                 ]
                                                                             }
                                                                         }
@@ -226,14 +241,14 @@
                                                                         }
                                                                     },
                                                                     {
-                                                                        "name": "active",
+                                                                        "name": "liquidationThreshold",
                                                                         "type": {
                                                                             "dataType": "uint256",
                                                                             "dataMeta": {
                                                                                 "size": 256,
                                                                                 "offset": [
-                                                                                    56,
-                                                                                    56
+                                                                                    31,
+                                                                                    16
                                                                                 ]
                                                                             }
                                                                         }
@@ -252,34 +267,22 @@
                                                                         }
                                                                     },
                                                                     {
-                                                                        "name": "supplyCap",
+                                                                        "name": "liquidationBonus",
                                                                         "type": {
                                                                             "dataType": "uint256",
                                                                             "dataMeta": {
                                                                                 "size": 256,
                                                                                 "offset": [
-                                                                                    151,
-                                                                                    116
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "borrowing",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    58,
-                                                                                    58
+                                                                                    47,
+                                                                                    32
                                                                                 ]
                                                                             }
                                                                         }
                                                                     }
                                                                 ]
                                                             }
-                                                        }
+                                                        },
+                                                        "read": true
                                                     }
                                                 }
                                             ]
@@ -292,7 +295,8 @@
                                         "dataType": "uint128",
                                         "dataMeta": {
                                             "size": 16
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -301,7 +305,8 @@
                                         "dataType": "uint128",
                                         "dataMeta": {
                                             "size": 16
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -310,7 +315,8 @@
                                         "dataType": "uint128",
                                         "dataMeta": {
                                             "size": 16
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -319,7 +325,8 @@
                                         "dataType": "uint128",
                                         "dataMeta": {
                                             "size": 16
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -328,7 +335,8 @@
                                         "dataType": "uint128",
                                         "dataMeta": {
                                             "size": 16
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -337,7 +345,8 @@
                                         "dataType": "uint40",
                                         "dataMeta": {
                                             "size": 5
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -346,7 +355,8 @@
                                         "dataType": "uint16",
                                         "dataMeta": {
                                             "size": 2
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -355,7 +365,8 @@
                                         "dataType": "uint40",
                                         "dataMeta": {
                                             "size": 5
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -363,8 +374,10 @@
                                     "type": {
                                         "dataType": "address",
                                         "dataMeta": {
-                                            "size": 20
-                                        }
+                                            "size": 20,
+                                            "interface": "IAToken"
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -373,7 +386,8 @@
                                         "dataType": "address",
                                         "dataMeta": {
                                             "size": 20
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -381,8 +395,10 @@
                                     "type": {
                                         "dataType": "address",
                                         "dataMeta": {
-                                            "size": 20
-                                        }
+                                            "size": 20,
+                                            "interface": "IVariableDebtToken"
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -391,7 +407,8 @@
                                         "dataType": "address",
                                         "dataMeta": {
                                             "size": 20
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -400,7 +417,8 @@
                                         "dataType": "uint128",
                                         "dataMeta": {
                                             "size": 16
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -409,7 +427,8 @@
                                         "dataType": "uint128",
                                         "dataMeta": {
                                             "size": 16
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -418,7 +437,8 @@
                                         "dataType": "uint128",
                                         "dataMeta": {
                                             "size": 16
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -427,7 +447,8 @@
                                         "dataType": "uint128",
                                         "dataMeta": {
                                             "size": 16
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 }
                             ]
@@ -492,7 +513,8 @@
                                                     }
                                                 }
                                             }
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 }
                             ]
@@ -517,7 +539,8 @@
                         "dataType": "address",
                         "dataMeta": {
                             "size": 20
-                        }
+                        },
+                        "read": true
                     }
                 },
                 "storageInfo": {
@@ -545,7 +568,8 @@
                                         "dataType": "uint16",
                                         "dataMeta": {
                                             "size": 2
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -554,7 +578,8 @@
                                         "dataType": "uint16",
                                         "dataMeta": {
                                             "size": 2
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -563,7 +588,8 @@
                                         "dataType": "uint16",
                                         "dataMeta": {
                                             "size": 2
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -572,7 +598,8 @@
                                         "dataType": "uint128",
                                         "dataMeta": {
                                             "size": 16
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -581,7 +608,8 @@
                                         "dataType": "string",
                                         "dataMeta": {
                                             "size": 32
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 },
                                 {
@@ -590,7 +618,8 @@
                                         "dataType": "uint128",
                                         "dataMeta": {
                                             "size": 16
-                                        }
+                                        },
+                                        "read": true
                                     }
                                 }
                             ]
@@ -615,7 +644,8 @@
                         "dataType": "uint8",
                         "dataMeta": {
                             "size": 1
-                        }
+                        },
+                        "read": true
                     }
                 },
                 "storageInfo": {
@@ -641,7 +671,8 @@
                 "storageInfo": {
                     "slot": 58,
                     "offset": 0
-                }
+                },
+                "read": true
             },
             "__DEPRECATED_flashLoanPremiumToProtocol": {
                 "dataType": "uint128",
@@ -671,7 +702,8 @@
                 "storageInfo": {
                     "slot": 59,
                     "offset": 8
-                }
+                },
+                "read": true
             },
             "_positionManager": {
                 "dataType": "mapping",
@@ -706,6 +738,228 @@
                 }
             }
         },
-        "address": "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2"
+        "address": "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
+        "constants": {
+            "Pool": [
+                {
+                    "name": "RESERVE_INTEREST_RATE_STRATEGY",
+                    "value": null,
+                    "type": {
+                        "dataType": "address",
+                        "dataMeta": {
+                            "size": 160,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "ADDRESSES_PROVIDER",
+                    "value": null,
+                    "type": {
+                        "dataType": "address",
+                        "dataMeta": {
+                            "size": 160,
+                            "interface": "IPoolAddressesProvider"
+                        }
+                    }
+                }
+            ],
+            "WadRayMath": [
+                {
+                    "name": "RAY",
+                    "value": 1000000000000000000000000000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "HALF_RAY",
+                    "value": 500000000000000000000000000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "WAD",
+                    "value": 1000000000000000000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                }
+            ],
+            "MathUtils": [
+                {
+                    "name": "SECONDS_PER_YEAR",
+                    "value": 31536000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                }
+            ],
+            "PercentageMath": [
+                {
+                    "name": "HALF_PERCENTAGE_FACTOR",
+                    "value": 5000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "PERCENTAGE_FACTOR",
+                    "value": 10000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                }
+            ],
+            "ValidationLogic": [
+                {
+                    "name": "HEALTH_FACTOR_LIQUIDATION_THRESHOLD",
+                    "value": 1000000000000000000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD",
+                    "value": 950000000000000000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                }
+            ],
+            "LiquidationLogic": [
+                {
+                    "name": "MIN_BASE_MAX_CLOSE_FACTOR_THRESHOLD",
+                    "value": 200000000000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "CLOSE_FACTOR_HF_THRESHOLD",
+                    "value": 950000000000000000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "DEFAULT_LIQUIDATION_CLOSE_FACTOR",
+                    "value": 5000,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                },
+                {
+                    "name": "MIN_LEFTOVER_BASE",
+                    "value": null,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                }
+            ],
+            "PoolInstance": [
+                {
+                    "name": "POOL_REVISION",
+                    "value": 9,
+                    "type": {
+                        "dataType": "uint256",
+                        "dataMeta": {
+                            "size": 256,
+                            "interface": null
+                        }
+                    }
+                }
+            ]
+        },
+        "interfaces": {
+            "IVariableDebtToken": [
+                "mint(address,address,uint256,uint256,uint256) returns(uint256)",
+                "burn(address,uint256,uint256) returns(bool,uint256)",
+                "UNDERLYING_ASSET_ADDRESS() returns(address)"
+            ],
+            "IAToken": [
+                "mint(address,address,uint256,uint256) returns(bool)",
+                "burn(address,address,uint256,uint256,uint256) returns(bool)",
+                "mintToTreasury(uint256,uint256) returns()",
+                "transferOnLiquidation(address,address,uint256,uint256,uint256) returns()",
+                "transferUnderlyingTo(address,uint256) returns()",
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32) returns()",
+                "UNDERLYING_ASSET_ADDRESS() returns(address)",
+                "RESERVE_TREASURY_ADDRESS() returns(address)",
+                "DOMAIN_SEPARATOR() returns(bytes32)",
+                "nonces(address) returns(uint256)",
+                "rescueTokens(address,address,uint256) returns()"
+            ],
+            "IPoolAddressesProvider": [
+                "getMarketId() returns(string)",
+                "setMarketId(string) returns()",
+                "getAddress(bytes32) returns(address)",
+                "setAddressAsProxy(bytes32,address) returns()",
+                "setAddress(bytes32,address) returns()",
+                "getPool() returns(address)",
+                "setPoolImpl(address) returns()",
+                "getPoolConfigurator() returns(address)",
+                "setPoolConfiguratorImpl(address) returns()",
+                "getPriceOracle() returns(address)",
+                "setPriceOracle(address) returns()",
+                "getACLManager() returns(address)",
+                "setACLManager(address) returns()",
+                "getACLAdmin() returns(address)",
+                "setACLAdmin(address) returns()",
+                "getPriceOracleSentinel() returns(address)",
+                "setPriceOracleSentinel(address) returns()",
+                "getPoolDataProvider() returns(address)",
+                "setPoolDataProvider(address) returns()"
+            ]
+        }
     }
 }

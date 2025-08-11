@@ -109,8 +109,12 @@ class Entity:
                 for field in meta["dataMeta"]["fields"]:
                     if field["name"] == parsed_expr["name"]:
                         return self.get_field_from_expr(parsed_expr["field"], field["type"])
+            elif meta["dataType"] == "staticArray":
+                raise Exception(f"Unimplemented type: {meta['dataType']}")
+            elif meta["dataType"] == "dynamicArray":
+                raise Exception(f"Unimplemented type: {meta['dataType']}")
             else:
-                raise Exception(f"Unknown type: {meta['dataType']}")
+                return meta
         else:
             return meta
             
@@ -177,7 +181,7 @@ class Entity:
     def get_storage_slot_from_name(self, name):
         parsed_expr = Entity.parse_expr(name)
         pass
-    
+
 
     
 
