@@ -2,12 +2,12 @@ from web3 import Web3
 import logging
 from slither.tools.read_storage.read_storage import SlitherReadStorage
 
-logging.basicConfig()
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class ContractInfo:
-    def __init__(self, rpc_url, contracts):
+    def __init__(self, rpc_url, contracts=None):
         self.rpc_url = rpc_url
         # 连接到以太坊节点
         # 如果您有本地节点，可以使用：

@@ -4,6 +4,12 @@ from slither.tools.contract_abstract.contract.slitherir_parser import SlitherIRP
 from slither.tools.contract_abstract.contract.context import AbstractContext
 from slither.slithir.operations.return_operation import Return
 from slither.tools.contract_abstract.contract.node import RemainNode, StartNode, EndNode
+from slither.core.cfg.node import Node
+from slither.core.variables.state_variable import StateVariable
+from slither.slithir.variables.constant import Constant
+from slither.core.solidity_types.elementary_type import ElementaryType
+from slither.slithir.operations.assignment import Assignment
+from slither.core.solidity_types.user_defined_type import UserDefinedType
 import os
 import psutil
 import z3
@@ -27,48 +33,92 @@ class ContractWalker:
 
         self.current_function = None
         self.interfaces = {} # 某个合约的interface，key是合约，value是interfaces
+        self.all_hight_level_call_functions = {} # 是一个detination到funcitons的映射
+        self.library_call_functions = {} # 记录所有library call的function
+        self.function_returns = {} # 记录所有view类型函数的返回值，key是function的full_name，value是set(storage_name)
+
+        self.utilities = []
 
     def walk(self):
-        for function in self.contract.functions_entry_points:
-            self.read_storages[function] = set()
-            self.write_storages[function] = set()
-            self.current_function = function
+        for function in self.contract.functions:
+            if function in self.contract.functions_entry_points or function.pure:
+                self.read_storages[function] = set()
+                self.write_storages[function] = set()
+                self.current_function = function
 
-            arguments_contexts = []
-            for parameter in function.parameters:
-                arguments_contexts.append(AbstractContext(parameter.name, None, {parameter.name}, set(), parameter.name))
-            # 给每个storage的context标记上input和storage，{"input": parmeterName, "storage": storageName, "input_taint": set(parmeterName), "storage_taint": set(storageName)}
-            for storage in self.contract.storage_variables_ordered:
-                storage.context["abstract"] = AbstractContext(None, storage.name, set(), {storage.name}, storage.name)
+                arguments_contexts = []
+                arguments_names = ""
+                for parameter in function.parameters:
+                    arguments_contexts.append(AbstractContext(parameter.name, None, {parameter.name}, set(), parameter.name))
+                    arguments_names += parameter.name + ","
+                # 给每个storage的context标记上input和storage，{"input": parmeterName, "storage": storageName, "input_taint": set(parmeterName), "storage_taint": set(storageName)}
+                for storage in self.contract.storage_variables_ordered:
+                    storage.context["abstract"] = AbstractContext(None, storage.name, set(), {storage.name}, storage.name)
 
-            logger.info(f"Walking function: {function.canonical_name}")
-            all_paths = []
-            ContractWalker.get_all_paths(function.entry_point, [StartNode(function, arguments_contexts)], all_paths)
-            # walk a path
-            path_id = 0
-            all_paths_with_index = []
-            for i, path in enumerate(all_paths):
-                all_paths_with_index.append((0, path))
-            while path_id < len(all_paths_with_index):
-                all_paths_with_index, new_path_id = self.walk_path(all_paths_with_index[path_id], self, all_paths_with_index, path_id)
-                if new_path_id > path_id:
-                    # 清除本次路径产生的abstract context
-                    for node in all_paths_with_index[path_id][1]:
-                        if not isinstance(node, StartNode) and not isinstance(node, EndNode):
-                            for ir in node.irs:
-                                SlitherIRParser.clear_context(ir, [])
-                    # 由于是不同路径，需要对storage重新更新
-                    for storage in self.contract.storage_variables_ordered:
-                        storage.context["abstract"] = AbstractContext(None, storage.name, set(), {storage.name}, storage.name)
-                path_id = new_path_id
-            # 清除函数间可能互相影响的相关状态
-            # self.parse_irs = set()
+                logger.info(f"Walking function: {function.canonical_name}")
+                if function.canonical_name == "Pool.setConfiguration(address,DataTypes.ReserveConfigurationMap)":
+                    pass
+                all_paths = []
+                ContractWalker.get_all_paths(function.entry_point, [StartNode(function, arguments_contexts)], all_paths)
+                # walk a path
+                path_id = 0
+                all_paths_with_index = []
+                for i, path in enumerate(all_paths):
+                    all_paths_with_index.append((0, path))
+                while path_id < len(all_paths_with_index):
+                    all_paths_with_index, new_path_id = self.walk_path(all_paths_with_index[path_id], self, all_paths_with_index, path_id)
+                    if new_path_id > path_id:
+                        # 如果是纯函数获取本次的返回值
+                        if function.pure or function.view:
+                            return_flag = False
+                            for node in all_paths_with_index[path_id][1][::-1]:
+                                if isinstance(node, Node) or isinstance(node, RemainNode):
+                                    ir = node.irs[-1]
+                                    if isinstance(ir, Return):
+                                        function_name = function.full_name
+                                        function_name += "#" + arguments_names + "#"
+                                        if function_name not in self.function_returns:
+                                            self.function_returns[function_name] = set()
+                                        for value in ir.values:
+                                            if isinstance(value, StateVariable) and (value.is_constant or value.is_immutable):
+                                                self.function_returns[function_name].add(value)
+                                            elif "abstract" in value.context and value.context["abstract"].storage is not None:
+                                                if isinstance(value.context["abstract"].storage, list):
+                                                    for s in value.context["abstract"].storage:
+                                                        if s is not None:
+                                                            self.function_returns[function_name].add(s)
+                                                elif isinstance(value.context["abstract"].storage, str):
+                                                    self.function_returns[function_name].add(value.context["abstract"].storage)
+                                    return_flag = True
+                                    break
+                            if not return_flag:
+                                if function.entry_point is None:
+                                    function_name = function.full_name
+                                    function_name += "#" + arguments_names + "#"
+                                    if function_name not in self.function_returns:
+                                        self.function_returns[function_name] = set()
+                                        if isinstance(function.return_type[0], ElementaryType):
+                                            self.function_returns[function_name].add("$"+function.name+"$"+function.return_type[0].name) #用$开头标记是public变量的返回值
+                                        else:
+                                            self.function_returns[function_name].add("$"+function.name+"$"+function.return_type[0].type.name) #用$开头标记是public变量的返回值
+                        # 清除本次路径产生的abstract context
+                        for node in all_paths_with_index[path_id][1]:
+                            if not isinstance(node, StartNode) and not isinstance(node, EndNode):
+                                for ir in node.irs:
+                                    SlitherIRParser.clear_context(ir, [])
+                        # 由于是不同路径，需要对storage重新更新
+                        for storage in self.contract.storage_variables_ordered:
+                            storage.context["abstract"] = AbstractContext(None, storage.name, set(), {storage.name}, storage.name)
+                    path_id = new_path_id
+                # 清除函数间可能互相影响的相关状态
+            self.parse_irs = set()
+        # self.parse_dependencies()
         self.analyse_bitmap()
         self.filter_storage()
-        self.function_write_storage = self.collect_function_write_storage()
-        
-        
+        self.parse_utilities()
+        self.collect_function_write_storage()
         return
+
     def walk_path(self, path_with_index, walker, all_paths_with_index, path_id):
         start_index = path_with_index[0]
         path = path_with_index[1]
@@ -152,6 +202,77 @@ class ContractWalker:
         else:
             return all_paths_with_index, path_id+1
 
+    def parse_utilities(self):
+        for function_str in self.function_returns:
+            parts = re.split(r'[()]', function_str.split("#")[0])
+            function_name = parts[0]
+            parameters_types = parts[1].split(",")
+            parameters_names = function_str.split("#")[1].split(",")
+            parameters = {}
+            for i, parameter_type in enumerate(parameters_types):
+                if parameter_type != "":
+                    parameters[parameters_names[i]] = parameter_type
+            returns = []
+            for return_value in self.function_returns[function_str]:
+                return_info = None
+                if isinstance(return_value, StateVariable) and (return_value.is_constant):
+                    ir = return_value.node_initialization.irs[0] #只处理直接赋值常量的形式
+                    if isinstance(ir, Assignment) and isinstance(ir.rvalue, Constant) and isinstance(ir.rvalue.type, ElementaryType):
+                        return_info = {}
+                        return_info["value"] = ir.rvalue.value
+                        return_info["type"] = ir.rvalue.type.name
+                elif isinstance(return_value, str) and return_value.startswith("$"):
+                    return_info = {}
+                    return_info["value"] = return_value.split("$")[1]
+                    return_info["type"] = return_value.split("$")[2]
+                elif isinstance(return_value, str):
+                    return_info = {}
+                    return_info["value"] = return_value
+                    meta = self.entity.get_field_from_name(return_value, self.entity.storage_meta)
+                    return_info["type"] = meta["dataType"]
+                if return_info is not None:
+                    returns.append(return_info)
+            utility = {
+                "function": function_name,
+                "parameters": parameters,
+                "returns": returns
+            }
+            self.utilities.append(utility)
+
+    def parse_dependencies(self):
+        w3 = self.entity.contract_info.w3
+        contract_address = self.entity.address
+        for destination in self.all_hight_level_call_functions:
+            if isinstance(destination, StateVariable) and destination.is_immutable and destination.node_initialization is None and destination.visibility == "public": # 识别是public的immutatble变量
+                return_type = None
+                if isinstance(destination.type, UserDefinedType):
+                    return_type = "address"
+                elif isinstance(destination.type, ElementaryType):
+                    return_type = destination.type.name
+                else:
+                    raise Exception(f"Unsupported return type: {destination.type}")
+                # 请求链上数据
+                # 配置abi
+                abi = [{
+                        "inputs": [],
+                        "name": destination.name,
+                        "outputs": [{"internalType": return_type, "name": "", "type": return_type}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    }]
+                # 创建合约对象
+                contract = w3.eth.contract(address=contract_address, abi=abi)
+                # 调用函数
+                return_value = getattr(contract.functions, destination.name)().call()
+            elif isinstance(destination, str):
+                pass # TODO: 处理
+
+                
+
+
+
+
+
     def analyse_bitmap(self):
         for named_bitmap in self.bitmaps:
             name = self.format_name(named_bitmap[0])
@@ -169,7 +290,7 @@ class ContractWalker:
                             meta["bitmap"] = added_bitmap
                         meta["bitmap"]["dataMeta"]["fields"].append({"name": name, "type": {"dataType": "uint256", "dataMeta": {"size": 256, "offset": (patterns[0])}}})
                     else:
-                        logger.warning(f"Unsupported bitmap: {bitmap}")
+                        logger.debug(f"Unsupported bitmap: {bitmap}")
                 elif len(vars) == 2:
                     self.get_bit_pattern_shift(bitmap, patterns)
                     pattern_mode = self.get_pattern_mode(patterns)
@@ -191,7 +312,7 @@ class ContractWalker:
                         meta["bitmap"]["dataMeta"]["elementType"]["dataMeta"]["fields"].append({"name": name, "type": {"dataType": "bool", "dataMeta": {"size": 1, "offset": (1)}}})
                 else:
                     raise Exception("Unsupported bitmap: {bitmap}")    
-                print(patterns)
+                # print(patterns)
 
     def filter_storage(self):
         for function in self.read_storages:
@@ -202,12 +323,13 @@ class ContractWalker:
 
     def collect_function_write_storage(self):
         for function in self.write_storages:
+            
+            storage_writes = set()
             for storage in self.write_storages[function]:
                 meta = self.entity.get_field_from_name(storage, self.entity.storage_meta)
-                if meta["dataType"] not in ["struct", "staticArray", "mapping"]:
-                    if function.full_name not in self.function_write_storage:
-                        self.function_write_storage[function.full_name] = set()
-                    self.function_write_storage[function.full_name].add(storage)
+                # if meta["dataType"] not in ["struct", "staticArray", "mapping", "dynamicArray"]:
+                storage_writes.add(storage)
+            self.function_write_storage[function.signature_str] = list(storage_writes)
 
 
     @staticmethod
@@ -345,6 +467,9 @@ class ContractWalker:
             else:
                 path.append(EndNode(node.function, call_operation))
                 all_paths.append(path)
+        else:
+            path.append(EndNode(path[0].function, None))
+            all_paths.append(path)
 
     # 给每个parament的context标记上input和storage，{"input": [parmeterName], "storage": [storageName]}
     @staticmethod

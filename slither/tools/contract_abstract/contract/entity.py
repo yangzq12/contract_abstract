@@ -3,15 +3,19 @@ from slither.core.solidity_types.array_type import ArrayType
 from slither.core.solidity_types.mapping_type import MappingType
 from slither.core.solidity_types.user_defined_type import UserDefinedType
 from slither.core.declarations.structure_contract import StructureContract
-import re
+from eth_abi import decode, encode
+from eth_utils import keccak
+from slither.tools.read_storage.utils import coerce_type
+from slither.tools.read_storage.read_storage import SlitherReadStorage
 
 
 class Entity:
-    def __init__(self, address, contract):
+    def __init__(self, address, contract, contract_info):
         self.address = address
         self.contract = contract
         self.storage_name_to_statevariable = {}
         self.statevariable_to_storage_name = {}
+        self.contract_info = contract_info
 
     def get_address(self):
         return self.address
@@ -36,9 +40,123 @@ class Entity:
         return entities
 
     # 获取storage的slot信息, storage_name使用基于storage_meta的表示
-    def get_storage_slot(self, storage):
-        pass
+    def get_storage_slot_info(self, storage):
+        parsed_expr = Entity.parse_expr(storage)
+        if parsed_expr["name"] not in self.storage_meta:
+            raise Exception(f"Field {parsed_expr['name']} not found in meta: {self.storage_meta}")
+        else:
+            slot_info = self.storage_meta[parsed_expr["name"]]["storageInfo"]
+            slot_info, type_info = self.get_storage_slot_info_from_expr(parsed_expr, slot_info, self.storage_meta[parsed_expr["name"]])
+            return slot_info, type_info
 
+    def get_storage_value(self, slot_info, type):
+        slot = slot_info["slot"]
+        offset = slot_info["offset"]
+        slot = int.to_bytes(slot,32,byteorder="big")
+        value_bytes = bytes(self.contract_info.w3.eth.get_storage_at(self.address, slot)).rjust(32, bytes(1))
+        value = self.contract_info.read_storage.convert_value_to_type(value_bytes, type["dataMeta"]["size"]*8, offset, type["dataType"])
+        return value
+
+
+    @staticmethod
+    def get_storage_slot_info_from_expr(parsed_expr, slot_info, meta): 
+        if meta["dataType"] == "struct":
+            base_slot = slot_info["slot"] 
+            if slot_info["offset"] > 0:
+                base_slot += 1     
+            field_name = parsed_expr["field"]["name"]
+            add_slot, offset, index = Entity.get_slot_info_for_structure(meta, field_name)
+            slot = base_slot + add_slot
+            if index != -1:
+                return Entity.get_storage_slot_info_from_expr(parsed_expr["field"], {"slot": slot, "offset": offset}, meta["dataMeta"]["fields"][index]["type"])
+            else:
+                raise Exception(f"Field {field_name} not found in struct {meta['dataMeta']['name']}")
+        elif meta["dataType"] == "staticArray" or meta["dataType"] == "dynamicArray":
+            array_index = int(parsed_expr["index"]["name"])
+            if array_index < 0 or array_index >= meta["dataMeta"]["length"]:
+                raise Exception(f"Array index {array_index} out of range for array {meta['dataMeta']['name']}")
+            else:
+                base_slot = slot_info["slot"] 
+                if slot_info["offset"] > 0:
+                    base_slot += 1 
+                slot = keccak(base_slot)
+                element_type = meta["dataMeta"]["elementType"]
+                if element_type["dataType"] == "struct":
+                    struct_slot, struct_offset, struct_index = Entity.get_slot_info_for_structure(element_type, "")
+                    slot_int = int.from_bytes(slot, "big") + array_index*struct_slot
+                    return Entity.get_storage_slot_info_from_expr(parsed_expr["index"], {"slot": slot_int, "offset": 0}, meta["dataMeta"]["elementType"])
+                elif element_type["dataType"] == "staticArray":
+                    raise Exception(f"Unimplemented type: {element_type['dataType']} in staticArray")
+                elif element_type["dataType"] == "dynamicArray":
+                    raise Exception(f"Unimplemented type: {element_type['dataType']} in dynamicArray")
+                elif element_type["dataType"] == "mapping":
+                    raise Exception(f"Unimplemented type: {element_type['dataType']} in mapping")
+                else:
+                    slot_int = int.from_bytes(slot, "big") + array_index #TODO: 先不考虑bytes、string或者其他的当元素少于256位从而在本slot中的情况
+                    return {"slot": slot_int, "offset": 0}, meta["dataMeta"]["elementType"]      
+        elif meta["dataType"] == "mapping":
+            key = parsed_expr["index"]["name"]
+            key_type = meta["dataMeta"]["key"]["dataType"]
+            assert key_type not in ["struct", "mapping", "dynamicArray", "staticArray"]
+            if "int" in key_type:  # without this eth_utils encoding fails
+                key = int(key)
+            key = coerce_type(key_type, key)
+
+            base_slot = slot_info["slot"] 
+            if slot_info["offset"] > 0:
+                base_slot += 1 
+            slot_bytes = keccak(encode([key_type, "uint256"], [key, base_slot]))
+            slot_int = int.from_bytes(slot_bytes, "big")
+            return Entity.get_storage_slot_info_from_expr(parsed_expr["index"], {"slot": slot_int, "offset": 0}, meta["dataMeta"]["value"])
+        else:
+            return slot_info, meta
+
+    @staticmethod
+    def get_slot_info_for_structure(meta, field_name):
+        slot = 0
+        offset = 0
+        start_offset = 0
+        assert meta["dataType"] == "struct"
+        index = -1
+        for field in meta["dataMeta"]["fields"]:
+            index += 1
+            field_type =field["type"]["dataType"]
+            if field_type == "struct":
+                if field["name"] == field_name:
+                    if offset > 0:
+                        return (slot+1, 0, index)
+                    else:
+                        return (slot, 0, index)
+                else:
+                    add_slot, _, _ = Entity.get_slot_info_for_structure(field["type"], "")
+                    slot = slot + add_slot
+                    offset = 0
+            elif field_type == "staticArray" or field_type == "dynamicArray" or field_type == "mapping":
+                if field["name"] == field_name:
+                    if offset > 0:
+                        return (slot+1, 0, index)
+                    else:
+                        return (slot, 0, index)
+                else:
+                    slot = slot + 1
+                    offset = 0
+            else:
+                size = field["type"]["dataMeta"]["size"]*8
+                if size > (256 - offset):
+                    slot += 1
+                    if field["name"] == field_name:
+                        return (slot, 0, index) 
+                    offset = size                            
+                else:
+                    if field["name"] == field_name:
+                        return (slot, offset, index)
+                    offset += size 
+        if offset > 0:
+            return (slot+1, 0, -1)
+        else:
+            return (slot, 0, -1)
+
+            
     def _deal_with_bitmap_type(self, type):
         pass
 
@@ -104,11 +222,17 @@ class Entity:
     def get_field_from_expr(self, parsed_expr, meta):
         if parsed_expr is not None:
             if meta["dataType"] == "mapping":
-                return self.get_field_from_expr(parsed_expr["field"], meta["dataMeta"]["value"])
+                if parsed_expr["index"] is not None:
+                    return self.get_field_from_expr(parsed_expr["index"], meta["dataMeta"]["value"])
+                else:
+                    return meta
             elif meta["dataType"] == "struct":
-                for field in meta["dataMeta"]["fields"]:
-                    if field["name"] == parsed_expr["name"]:
-                        return self.get_field_from_expr(parsed_expr["field"], field["type"])
+                if parsed_expr["field"] is not None:
+                    for field in meta["dataMeta"]["fields"]:
+                        if field["name"] == parsed_expr["field"]["name"]:
+                            return self.get_field_from_expr(parsed_expr["field"], field["type"])
+                else:
+                    return meta
             elif meta["dataType"] == "staticArray":
                 raise Exception(f"Unimplemented type: {meta['dataType']}")
             elif meta["dataType"] == "dynamicArray":
@@ -120,63 +244,70 @@ class Entity:
             
     @staticmethod
     def parse_expr(expr: str):
-        expr = expr.strip()
-        
-        # 如果是字段访问 a.b.c
-        dot_pos = Entity.find_top_level_dot(expr)
-        if dot_pos != -1:
-            name_part = expr[:dot_pos]
-            field_part = expr[dot_pos+1:]
-            return {
-                "name": Entity.get_name(name_part),
-                "index": Entity.get_index(name_part),
-                "field": Entity.parse_expr(field_part)
-            }
-        
-        # 如果是数组访问 a[b]
-        if "[" in expr and expr.endswith("]"):
-            name_part = expr[:expr.index("[")]
-            index_part = expr[expr.index("[")+1:-1]  # 去掉外层 []
-            return {
-                "name": name_part,
-                "index": Entity.parse_expr(index_part),
-                "field": None
-            }
-        
-        # 普通标识符
-        return {
-            "name": expr,
-            "index": None,
-            "field": None
-        }
+        if expr.startswith(".") or expr.startswith("["):
+            raise Exception(f"Invalid expression: {expr}")
+        is_brack, is_dot, next_start = Entity.find_next_elem(expr, 0)
+        if is_brack:
+            return {"name": expr[0:next_start], "index": Entity.parse_expr_internal(expr[next_start:]), "field": None}
+        elif is_dot:
+            return {"name": expr[0:next_start], "index": None, "field": Entity.parse_expr_internal(expr[next_start:])}
+        else:
+            return {"name": expr[0:next_start], "index": None, "field": None}
+    
+    @staticmethod
+    def parse_expr_internal(expr: str):
+        if expr == "":
+            return None
+        if expr.startswith("."):
+            is_brack, is_dot, next_start = Entity.find_next_elem(expr, 1)
+            if is_brack:
+                return {"name": expr[1:next_start], "index": Entity.parse_expr_internal(expr[next_start:]), "field": None}
+            elif is_dot:
+                return {"name": expr[1:next_start], "index": None, "field": Entity.parse_expr_internal(expr[next_start:])}
+            else:
+                return {"name": expr[1:next_start], "index": None, "field": None}
+        elif expr.startswith("["):
+            closing_pos = Entity.find_matching_bracket(expr, 0)
+            name_entity = Entity.parse_expr(expr[1:closing_pos])
+            if name_entity["index"] is None and name_entity["field"] is None:
+                name_entity = name_entity["name"]
+            is_brack, is_dot, next_start = Entity.find_next_elem(expr, closing_pos + 1)
+            if is_brack:
+                return {"name": name_entity, "index": Entity.parse_expr_internal(expr[next_start:]), "field": None}
+            elif is_dot:
+                return {"name": name_entity, "index": None, "field": Entity.parse_expr_internal(expr[next_start:])}
+            else:
+                return {"name": name_entity, "index": None, "field": None}
+        else:
+            raise Exception(f"Invalid expression: {expr}")
 
     @staticmethod
-    def get_name(part):
-        """获取数组访问前的名字"""
-        if "[" in part:
-            return part[:part.index("[")]
-        return part
+    def find_next_elem(expr: str, open_pos=0):
+        is_bracket = False
+        is_dot = False
+        elem_start = len(expr)
+        for i in range(open_pos, len(expr)):
+            if expr[i] == "[":
+                is_bracket = True
+                elem_start = i
+                break
+            elif expr[i] == ".":
+                is_dot = True
+                elem_start = i
+                break
+        return is_bracket, is_dot, elem_start
 
     @staticmethod
-    def get_index(part):
-        """获取数组访问的 index 表达式（递归解析）"""
-        if "[" in part:
-            index_part = part[part.index("[")+1:-1]
-            return Entity.parse_expr(index_part)
-        return None
-
-    @staticmethod
-    def find_top_level_dot(s):
-        """查找不在 [] 内的顶层 . 位置"""
+    def find_matching_bracket(expr: str, open_pos: int):
         depth = 0
-        for i, ch in enumerate(s):
-            if ch == "[":
+        for i in range(open_pos, len(expr)):
+            if expr[i] == "[":
                 depth += 1
-            elif ch == "]":
+            elif expr[i] == "]":
                 depth -= 1
-            elif ch == "." and depth == 0:
-                return i
-        return -1
+                if depth == 0:
+                    return i
+        raise ValueError("Unmatched bracket")
 
     def get_storage_slot_from_name(self, name):
         parsed_expr = Entity.parse_expr(name)

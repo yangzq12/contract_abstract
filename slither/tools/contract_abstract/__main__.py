@@ -115,22 +115,28 @@ def main() -> None:
         source_code = None
         slither = Slither(target, **vars(args))
 
+    contract_info = None
     if args.rpc_url:
         contract_info = ContractInfo(args.rpc_url, slither.contracts)
-    
 
     # 获取主合约
     if source_code:
         primary_contract, slither = get_primary_contract_with_source_code(slither, source_code, args)
     else:
-        primary_contract, slither, target = get_primary_contract_with_address(slither, target, args)
+        primary_contract, slither, logic_target = get_primary_contract_with_address(slither, target, args)
 
     # 获取合约链上的字节码
     # bytecode = contract_info.get_contract_bytecode(target)
 
     # 获取合约的storage信息
-    entity = Entity(target, primary_contract)
+    entity = Entity(target, primary_contract, contract_info)
     entity.get_storage_meta() 
+
+    # 获取具体的storage信息
+    # slot_info1, type_info1 = entity.get_storage_slot_info("_reservesList[1]")
+    # value1 = entity.get_storage_value(slot_info1, type_info1)
+    # slot_info2, type_info2 = entity.get_storage_slot_info(f"_reserves[{value1}].id")
+    # value2 = entity.get_storage_value(slot_info2, type_info2)
 
     # 通过对合约的所有entry的函数
     contract_walker = ContractWalker(primary_contract, entity)
@@ -139,7 +145,7 @@ def main() -> None:
 
     #输出最终的meta.json的结构
     result = {}
-    result[primary_contract.name]={"entities" : entity.storage_meta, "address": args.contract_source[0], "constants": contract_walker.constants, "interfaces": contract_walker.interfaces}
+    result[primary_contract.name]={"entities" : entity.storage_meta, "address": args.contract_source[0], "constants": contract_walker.constants, "utilities": contract_walker.utilities, "function_write_storage": contract_walker.function_write_storage}
 
     get_contract_from_name(slither, primary_contract.name)
 

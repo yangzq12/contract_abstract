@@ -58,6 +58,11 @@ class SlitherIRParser:
         self.lvalues = []
 
     def parse(self, path, path_index):
+        if self.ir.node.function.name == "setReserveFactor":
+            pass
+        if hasattr(self.ir, "lvalue"):
+            # 记录写的storage
+            self.record_write_storage(self.ir.lvalue)
         if isinstance(self.ir, Index):
             left_context = self._deal_with_read(self.ir.variable_left)
             right_context = self._deal_with_read(self.ir.variable_right)
@@ -235,9 +240,19 @@ class SlitherIRParser:
                 raise Exception(f"Member is not a UserDefinedType variable: {self.ir.variable_left.name}")
         elif isinstance(self.ir, Assignment):
             lvalue = self.ir.lvalue
-            context = self._deal_with_read(self.ir.rvalue)
-            self._deal_with_write(lvalue, context)
-            self._deal_with_reference(lvalue, context)
+
+            right_context = self._deal_with_read(self.ir.rvalue)
+            if hasattr(lvalue, "location") and lvalue.location == "storage":
+                if "abstract" in lvalue.context and lvalue.context["abstract"] is not None:
+                    left_context = self._deal_with_read(lvalue)
+                    if left_context.storage is not None:
+                        right_context.storage = left_context.storage
+            elif isinstance(lvalue, ReferenceVariable) and lvalue.points_to is not None and hasattr(lvalue.points_to, "location") and lvalue.points_to.location == "storage":
+                left_context = self._deal_with_read(lvalue)
+                if left_context.storage is not None:
+                    right_context.storage = left_context.storage
+            self._deal_with_write(lvalue, right_context)
+            self._deal_with_reference(lvalue, right_context)
             self.parse_bitmap(self.ir)
         elif isinstance(self.ir, Binary):
             left_context = self._deal_with_read(self.ir.variable_left)
@@ -257,10 +272,22 @@ class SlitherIRParser:
             lvalue = self.ir.lvalue
             context = self._deal_with_read(self.ir.variable)
             self._deal_with_write(lvalue, context)
-            self._parse_address_type(self.ir.variable, lvalue)
+            # self._parse_address_type(self.ir.variable, lvalue)
         elif isinstance(self.ir, HighLevelCall):
             context = AbstractContext(None, None, set(), set(), None)
             arguments = ""
+            destination = None
+            if isinstance(self.ir.destination, StateVariable) and (self.ir.destination.is_constant or self.ir.destination.is_immutable):
+                destination = self.ir.destination
+            elif self.ir.destination.context["abstract"].storage is not None:
+                destination = self.ir.destination.context["abstract"].storage
+            if destination is not None:
+                if destination not in self.walker.all_hight_level_call_functions:
+                    self.walker.all_hight_level_call_functions[destination] = set()
+                if isinstance(self.ir.function, StateVariable):
+                    self.walker.all_hight_level_call_functions[destination].add(self.ir.function.full_name)
+                elif self.ir.function.pure or self.ir.function.view:
+                    self.walker.all_hight_level_call_functions[destination].add(self.ir.function.full_name)
             # for i, argument in enumerate(self.ir.arguments):
             #     argument_context = self._deal_with_read(argument)
             #     if isinstance(argument_context.storage_taints, list): # TODO: 只处理一层list
@@ -314,7 +341,8 @@ class SlitherIRParser:
             self._deal_with_write(self.ir.lvalue, context)
             self._deal_with_reference(self.ir.lvalue, context)
         elif isinstance(self.ir, EventCall):
-            pass
+            for i, argument in enumerate(self.ir.arguments):
+                argument_context = self._deal_with_read(argument)
         elif isinstance(self.ir, Length):
             value_context = self._deal_with_read(self.ir.value)
             input_context = None
@@ -365,6 +393,7 @@ class SlitherIRParser:
                 context.value =self.ir.type.value + "(" + context.value + ")" 
                 # context.value =self.ir.type.value               
             self._deal_with_write(lvalue, context)
+            self._deal_with_reference(self.ir.lvalue, context)
             self.parse_bitmap(self.ir)
         elif isinstance(self.ir, CodeSize):
             value_context = self._deal_with_read(self.ir.value)
@@ -392,6 +421,13 @@ class SlitherIRParser:
                         meta["dataMeta"]["interface"] = interface_name
                 
 
+    def record_write_storage(self, lvalue):
+        if (hasattr(lvalue, "location") and lvalue.location == "storage") \
+            or (isinstance(lvalue, ReferenceVariable) and lvalue.points_to_origin is not None and hasattr(lvalue.points_to_origin, "location") and lvalue.points_to_origin.location == "storage") \
+             or (isinstance(lvalue, ReferenceVariable) and lvalue.points_to_origin is not None and hasattr(lvalue.points_to_origin, "is_stored") and lvalue.points_to_origin.is_stored):
+                if "abstract" in lvalue.context and lvalue.context["abstract"] is not None:
+                    left_context = self._deal_with_read(lvalue)
+                    self.record_storage(self.walker.write_storages[self.walker.current_function], left_context)
     @staticmethod
     def clear_context(ir, storages):
         if isinstance(ir, Index):
@@ -593,8 +629,7 @@ class SlitherIRParser:
         if lvalue is not None:
             lvalue.context["abstract"] = context
             self.lvalues.append(lvalue)
-            # 记录写的storage
-            self.record_storage(self.walker.write_storages[self.walker.current_function], context)
+            
 
 
     def record_storage(self, collect, context):
@@ -706,8 +741,6 @@ class SlitherIRParser:
                             points_to_context.value.append(context.value)
                         else:
                             points_to_context.value.append(None)
-                #记录写storage
-                self.record_storage(self.walker.write_storages[self.walker.current_function], points_to_context)
         
     def contintue_internal_call(self, return_variables):
         if return_variables is not None:
@@ -723,7 +756,9 @@ class SlitherIRParser:
                     context.input_taints.append(return_context.input_taints)
                     context.storage_taints.append(return_context.storage_taints)
                     context.value.append(return_context.value)
-                self.ir.lvalue.context["abstract"] = context
+                # self.ir.lvalue.context["abstract"] = context
+                self._deal_with_write(self.ir.lvalue, context)
+                self._deal_with_reference(self.ir.lvalue, context)
 
 
     def close(self):

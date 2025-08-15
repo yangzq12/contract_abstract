@@ -9,7 +9,7 @@ from crytic_compile import cryticparser
 from slither import Slither
 from slither.exceptions import SlitherError
 from slither.tools.read_storage.read_storage import SlitherReadStorage, RpcInfo
-
+from slither.tools.contract_abstract.contract.entity import Entity
 
 def parse_args() -> argparse.Namespace:
     """Parse the underlying arguments for the program.
@@ -135,6 +135,10 @@ def main() -> None:
     else:
         contracts = slither.contracts
 
+    tmp3 = Entity.parse_expr("a[b][c]].d")
+    tmp1 = Entity.parse_expr("a[b].c[0].d")
+    tmp2 = Entity.parse_expr("a[b].c")
+    
     rpc_info = None
     if args.rpc_url:
         valid = ["latest", "earliest", "pending", "safe", "finalized"]
