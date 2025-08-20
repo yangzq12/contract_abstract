@@ -29,6 +29,7 @@ class TransactionInfo:
             'port': 5432
         }
         self.db_connection = None
+        self.contract_creation_block = None
         
         # 初始化数据库管理器并设置数据库环境
         self.db_manager = DatabaseManager(self.db_config)
@@ -60,6 +61,24 @@ class TransactionInfo:
                 logger.error(f"数据库连接失败 (尝试 {attempt + 1}/{max_retries}): {e}")
                 
                 if "database" in error_msg and "does not exist" in error_msg:
+                    # 尝试使用小写数据库名称连接
+                    original_db_name = self.db_config['database']
+                    lowercase_db_name = original_db_name.lower()
+                    
+                    if original_db_name != lowercase_db_name:
+                        logger.info(f"尝试使用小写数据库名称连接: {lowercase_db_name}")
+                        try:
+                            temp_config = self.db_config.copy()
+                            temp_config['database'] = lowercase_db_name
+                            self.db_connection = psycopg2.connect(**temp_config)
+                            self.db_connection.autocommit = False
+                            logger.info(f"成功连接到数据库 (使用小写名称: {lowercase_db_name})")
+                            # 更新配置中的数据库名称为小写
+                            self.db_config['database'] = lowercase_db_name
+                            return
+                        except psycopg2.OperationalError as e2:
+                            logger.error(f"使用小写数据库名称连接也失败: {e2}")
+                    
                     logger.error(f"数据库 {self.db_config['database']} 不存在")
                     logger.info("请确保数据库已创建，或者检查数据库管理器是否正确运行")
                     raise
@@ -271,7 +290,7 @@ class TransactionInfo:
         except Exception:
             raise Exception(f"解码交易输入失败: {tx_input}")
 
-    def get_transactions(self, start_block, end_block):
+    def get_transactions_from_etherscan(self, start_block, end_block):
         """获取指定区块范围内的所有交易记录（包括普通交易和内部交易）
         
         Args:
@@ -305,6 +324,7 @@ class TransactionInfo:
         except Exception as e:
             raise Exception(f"获取交易记录时发生错误: {e}")
 
+    
     def save_transactions_to_db(self, transactions: List[Dict[str, Any]]) -> int:
         """将交易数据保存到PostgreSQL数据库"""
         if not self.db_connection:
@@ -630,6 +650,8 @@ class TransactionInfo:
 
     def get_contract_creation_block(self) -> Optional[int]:
         """获取合约的部署区块号"""
+        if self.contract_creation_block is not None:
+            return self.contract_creation_block
         creation_info = self.get_contract_creation_tx()
         if creation_info and creation_info.get("blockNumber"):
             try:

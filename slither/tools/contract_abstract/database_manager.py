@@ -152,10 +152,29 @@ class DatabaseManager:
             cursor = conn.cursor()
             
             # 检查目标数据库是否存在
-            cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s", 
+            # logger.info(f"检查数据库是否存在: {self.db_config['database']}")
+            # logger.info(f"数据库名称类型: {type(self.db_config['database'])}")
+            # logger.info(f"数据库名称长度: {len(self.db_config['database'])}")
+            # logger.info(f"数据库名称字节表示: {self.db_config['database'].encode('utf-8')}")
+            
+            # 列出所有数据库进行调试
+            # cursor.execute("SELECT datname FROM pg_database")
+            # all_databases = cursor.fetchall()
+            # logger.info(f"所有数据库: {[db[0] for db in all_databases]}")
+            
+            # 检查是否有匹配的数据库（不区分大小写）
+            # matching_dbs = [db[0] for db in all_databases if db[0].lower() == self.db_config['database'].lower()]
+            # logger.info(f"匹配的数据库: {matching_dbs}")
+            
+            # 使用不区分大小写的查询
+            cursor.execute("SELECT 1 FROM pg_database WHERE LOWER(datname) = LOWER(%s)", 
                          (self.db_config['database'],))
             
-            if not cursor.fetchone():
+            result = cursor.fetchone()
+            # logger.info(f"查询结果: {result}")
+            # logger.info(f"查询结果类型: {type(result)}")
+            
+            if not result:
                 logger.info(f"数据库 {self.db_config['database']} 不存在，正在创建...")
                 try:
                     cursor.execute(f"CREATE DATABASE {self.db_config['database']}")

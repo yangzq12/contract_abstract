@@ -109,7 +109,7 @@ def main() -> None:
                 current_end = min(i + every_batch_block, end_block)
                 logger.info(f"处理区块范围: {i} - {current_end}")
                 
-                txs = transaction_info.get_transactions(i, current_end)
+                txs = transaction_info.get_transactions_from_etherscan(i, current_end)
                 if txs:
                     saved_count = transaction_info.save_transactions_to_db(txs)
                     logger.info(f"成功保存 {saved_count} 条交易记录")
@@ -144,7 +144,7 @@ def main() -> None:
                 if etherscan_latest_block > end_block:
                     logger.info(f"发现新区块: {etherscan_latest_block}，开始同步...")
                     try:
-                        txs = transaction_info.get_transactions(end_block, etherscan_latest_block)
+                        txs = transaction_info.get_transactions_from_etherscan(end_block, etherscan_latest_block)
                         if txs:
                             saved_count = transaction_info.save_transactions_to_db(txs)
                             logger.info(f"成功保存 {saved_count} 条新区块交易记录")
