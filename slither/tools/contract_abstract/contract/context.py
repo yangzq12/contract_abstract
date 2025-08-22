@@ -11,7 +11,10 @@ class AbstractContext:
         # storage_taints表示该变量受到某些storage值的taint
         self.storage_taints = storage_taint # 如果是结构体变量、tuple就是集合数组，如果是简单变量就是集合
         # value表示该变量当前的值的表示
-        self.value = value  # 如果是结构体变量、tuple就是string数组，如果是简单变量就是string
+        if value is None:
+            self.value = "$unknown$"
+        else:
+            self.value = value  # 如果是结构体变量、tuple就是string数组，如果是简单变量就是string
 
     def __str__(self):
         return f"Context(input={self.input}, storage={self.storage}, input_taint={self.input_taint}, storage_taint={self.storage_taint}, value={self.value})"

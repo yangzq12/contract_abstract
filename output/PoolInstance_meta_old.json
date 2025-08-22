@@ -72,53 +72,40 @@
                                                             "dataMeta": {
                                                                 "fields": [
                                                                     {
-                                                                        "name": "ltv",
+                                                                        "name": "decimals",
                                                                         "type": {
                                                                             "dataType": "uint256",
                                                                             "dataMeta": {
                                                                                 "size": 256,
                                                                                 "offset": [
-                                                                                    15,
-                                                                                    0
+                                                                                    55,
+                                                                                    48
                                                                                 ]
                                                                             }
                                                                         }
                                                                     },
                                                                     {
-                                                                        "name": "supplyCap",
+                                                                        "name": "decimals",
                                                                         "type": {
                                                                             "dataType": "uint256",
                                                                             "dataMeta": {
                                                                                 "size": 256,
                                                                                 "offset": [
-                                                                                    151,
-                                                                                    116
+                                                                                    55,
+                                                                                    48
                                                                                 ]
                                                                             }
                                                                         }
                                                                     },
                                                                     {
-                                                                        "name": "siloedBorrowing",
+                                                                        "name": "debtCeiling",
                                                                         "type": {
                                                                             "dataType": "uint256",
                                                                             "dataMeta": {
                                                                                 "size": 256,
                                                                                 "offset": [
-                                                                                    62,
-                                                                                    62
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "borrowCap",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    115,
-                                                                                    80
+                                                                                    251,
+                                                                                    212
                                                                                 ]
                                                                             }
                                                                         }
@@ -137,27 +124,118 @@
                                                                         }
                                                                     },
                                                                     {
-                                                                        "name": "flashloanEnabled",
+                                                                        "name": "reserveFactor",
                                                                         "type": {
                                                                             "dataType": "uint256",
                                                                             "dataMeta": {
                                                                                 "size": 256,
                                                                                 "offset": [
-                                                                                    63,
-                                                                                    63
+                                                                                    79,
+                                                                                    64
                                                                                 ]
                                                                             }
                                                                         }
                                                                     },
                                                                     {
-                                                                        "name": "liquidationThreshold",
+                                                                        "name": "borrowCap",
                                                                         "type": {
                                                                             "dataType": "uint256",
                                                                             "dataMeta": {
                                                                                 "size": 256,
                                                                                 "offset": [
-                                                                                    31,
-                                                                                    16
+                                                                                    115,
+                                                                                    80
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "active",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    56,
+                                                                                    56
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "paused",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    60,
+                                                                                    60
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "paused",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    60,
+                                                                                    60
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "active",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    56,
+                                                                                    56
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "frozen",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    57,
+                                                                                    57
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "ltv",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    15,
+                                                                                    0
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "borrowableInIsolation",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    61,
+                                                                                    61
                                                                                 ]
                                                                             }
                                                                         }
@@ -176,6 +254,19 @@
                                                                         }
                                                                     },
                                                                     {
+                                                                        "name": "supplyCap",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    151,
+                                                                                    116
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
                                                                         "name": "liquidationBonus",
                                                                         "type": {
                                                                             "dataType": "uint256",
@@ -184,6 +275,58 @@
                                                                                 "offset": [
                                                                                     47,
                                                                                     32
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "flashloanEnabled",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    63,
+                                                                                    63
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "siloedBorrowing",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    62,
+                                                                                    62
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "liquidationBonus",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    47,
+                                                                                    32
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "name": "liquidationThreshold",
+                                                                        "type": {
+                                                                            "dataType": "uint256",
+                                                                            "dataMeta": {
+                                                                                "size": 256,
+                                                                                "offset": [
+                                                                                    31,
+                                                                                    16
                                                                                 ]
                                                                             }
                                                                         }
@@ -215,45 +358,6 @@
                                                                         }
                                                                     },
                                                                     {
-                                                                        "name": "paused",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    60,
-                                                                                    60
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "paused",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    60,
-                                                                                    60
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "liquidationBonus",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    47,
-                                                                                    32
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
                                                                         "name": "ltv",
                                                                         "type": {
                                                                             "dataType": "uint256",
@@ -262,110 +366,6 @@
                                                                                 "offset": [
                                                                                     15,
                                                                                     0
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "active",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    56,
-                                                                                    56
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "reserveFactor",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    79,
-                                                                                    64
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "active",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    56,
-                                                                                    56
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "debtCeiling",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    251,
-                                                                                    212
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "decimals",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    55,
-                                                                                    48
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "frozen",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    57,
-                                                                                    57
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "decimals",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    55,
-                                                                                    48
-                                                                                ]
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "name": "borrowableInIsolation",
-                                                                        "type": {
-                                                                            "dataType": "uint256",
-                                                                            "dataMeta": {
-                                                                                "size": 256,
-                                                                                "offset": [
-                                                                                    61,
-                                                                                    61
                                                                                 ]
                                                                             }
                                                                         }
@@ -579,22 +579,22 @@
                                                     "dataMeta": {
                                                         "fields": [
                                                             {
-                                                                "name": "Borrowing",
-                                                                "type": {
-                                                                    "dataType": "bool",
-                                                                    "dataMeta": {
-                                                                        "size": 1,
-                                                                        "offset": 0
-                                                                    }
-                                                                }
-                                                            },
-                                                            {
                                                                 "name": "UsingAsCollateral",
                                                                 "type": {
                                                                     "dataType": "bool",
                                                                     "dataMeta": {
                                                                         "size": 1,
                                                                         "offset": 1
+                                                                    }
+                                                                }
+                                                            },
+                                                            {
+                                                                "name": "Borrowing",
+                                                                "type": {
+                                                                    "dataType": "bool",
+                                                                    "dataMeta": {
+                                                                        "size": 1,
+                                                                        "offset": 0
                                                                     }
                                                                 }
                                                             }
@@ -1018,7 +1018,11 @@
                 },
                 "returns": [
                     {
-                        "value": "_reserves[asset].variableBorrowIndex",
+                        "value": "_reserves[asset].lastUpdateTimestamp",
+                        "type": "uint40"
+                    },
+                    {
+                        "value": "_reserves[asset].liquidityIndex",
                         "type": "uint128"
                     },
                     {
@@ -1026,20 +1030,16 @@
                         "type": "uint128"
                     },
                     {
-                        "value": "_reserves[asset].liquidityIndex",
-                        "type": "uint128"
-                    },
-                    {
-                        "value": "_reserves[asset].currentVariableBorrowRate",
-                        "type": "uint128"
-                    },
-                    {
                         "value": "_reserves[asset].aTokenAddress",
                         "type": "address"
                     },
                     {
-                        "value": "_reserves[asset].lastUpdateTimestamp",
-                        "type": "uint40"
+                        "value": "_reserves[asset].variableBorrowIndex",
+                        "type": "uint128"
+                    },
+                    {
+                        "value": "_reserves[asset].isolationModeTotalDebt",
+                        "type": "uint128"
                     },
                     {
                         "value": "_reserves[asset].id",
@@ -1054,12 +1054,12 @@
                         "type": "uint128"
                     },
                     {
-                        "value": "_reserves[asset].configuration",
-                        "type": "struct"
+                        "value": "_reserves[asset].currentVariableBorrowRate",
+                        "type": "uint128"
                     },
                     {
-                        "value": "_reserves[asset].isolationModeTotalDebt",
-                        "type": "uint128"
+                        "value": "_reserves[asset].configuration",
+                        "type": "struct"
                     }
                 ]
             },
@@ -1193,7 +1193,7 @@
                         "type": "uint16"
                     },
                     {
-                        "value": "_eModeCategories[id].liquidationBonus",
+                        "value": "_eModeCategories[id].liquidationThreshold",
                         "type": "uint16"
                     },
                     {
@@ -1201,7 +1201,7 @@
                         "type": "string"
                     },
                     {
-                        "value": "_eModeCategories[id].liquidationThreshold",
+                        "value": "_eModeCategories[id].liquidationBonus",
                         "type": "uint16"
                     }
                 ]
@@ -1217,11 +1217,11 @@
                         "type": "uint16"
                     },
                     {
-                        "value": "_eModeCategories[id].liquidationBonus",
+                        "value": "_eModeCategories[id].liquidationThreshold",
                         "type": "uint16"
                     },
                     {
-                        "value": "_eModeCategories[id].liquidationThreshold",
+                        "value": "_eModeCategories[id].liquidationBonus",
                         "type": "uint16"
                     }
                 ]
@@ -1390,653 +1390,276 @@
                 "parameters": {},
                 "returns": [
                     {
-                        "value": "getRevision",
+                        "value": 9,
                         "type": "uint256"
                     },
                     {
-                        "value": 9,
+                        "value": "getRevision",
                         "type": "uint256"
                     }
                 ]
             }
         ],
         "function_write_storage": {
-            "supply(address,uint256,address,uint16)": {
-                "parameters": [
-                    "asset",
-                    "amount",
-                    "onBehalfOf",
-                    "referralCode"
-                ],
-                "write_storages": [
-                    "_reserves[asset].variableBorrowIndex",
-                    "_reserves[asset].virtualUnderlyingBalance",
-                    "_reserves[asset].accruedToTreasury",
-                    "_reserves[asset].liquidityIndex",
-                    "_reserves[asset].currentVariableBorrowRate",
-                    "_usersConfig[onBehalfOf].data",
-                    "_reserves[asset].lastUpdateTimestamp",
-                    "_reserves[asset].currentLiquidityRate"
-                ]
-            },
-            "supplyWithPermit(address,uint256,address,uint16,uint256,uint8,bytes32,bytes32)": {
-                "parameters": [
-                    "asset",
-                    "amount",
-                    "onBehalfOf",
-                    "referralCode",
-                    "deadline",
-                    "permitV",
-                    "permitR",
-                    "permitS"
-                ],
-                "write_storages": [
-                    "_reserves[asset].variableBorrowIndex",
-                    "_reserves[asset].virtualUnderlyingBalance",
-                    "_reserves[asset].accruedToTreasury",
-                    "_reserves[asset].liquidityIndex",
-                    "_reserves[asset].currentVariableBorrowRate",
-                    "_usersConfig[onBehalfOf].data",
-                    "_reserves[asset].lastUpdateTimestamp",
-                    "_reserves[asset].currentLiquidityRate"
-                ]
-            },
-            "withdraw(address,uint256,address)": {
-                "parameters": [
-                    "asset",
-                    "amount",
-                    "to"
-                ],
-                "write_storages": [
-                    "_reserves[asset].variableBorrowIndex",
-                    "_reserves[asset].virtualUnderlyingBalance",
-                    "_reserves[asset].accruedToTreasury",
-                    "_reserves[asset].liquidityIndex",
-                    "_reserves[asset].currentVariableBorrowRate",
-                    "_usersConfig[msg.sender].data",
-                    "_reserves[asset].lastUpdateTimestamp",
-                    "_reserves[asset].currentLiquidityRate"
-                ]
-            },
-            "borrow(address,uint256,uint256,uint16,address)": {
-                "parameters": [
-                    "asset",
-                    "amount",
-                    "interestRateMode",
-                    "referralCode",
-                    "onBehalfOf"
-                ],
-                "write_storages": [
-                    "_reserves[asset].variableBorrowIndex",
-                    "_reserves[asset].virtualUnderlyingBalance",
-                    "_reserves[_reservesList[((0)+(1))+(1)]].isolationModeTotalDebt",
-                    "_reserves[asset].accruedToTreasury",
-                    "_reserves[asset].liquidityIndex",
-                    "_reserves[asset].currentVariableBorrowRate",
-                    "_usersConfig[onBehalfOf].data",
-                    "_reserves[asset].lastUpdateTimestamp",
-                    "_reserves[_reservesList[(0)+(1)]].isolationModeTotalDebt",
-                    "_reserves[asset].currentLiquidityRate",
-                    "_reserves[0].isolationModeTotalDebt"
-                ]
-            },
-            "repay(address,uint256,uint256,address)": {
-                "parameters": [
-                    "asset",
-                    "amount",
-                    "interestRateMode",
-                    "onBehalfOf"
-                ],
-                "write_storages": [
-                    "_reserves[asset].variableBorrowIndex",
-                    "_reserves[asset].virtualUnderlyingBalance",
-                    "_reserves[asset].accruedToTreasury",
-                    "_reserves[asset].liquidityIndex",
-                    "_reserves[asset].currentVariableBorrowRate",
-                    "_usersConfig[onBehalfOf].data",
-                    "_reserves[_reservesList[0]].isolationModeTotalDebt",
-                    "_reserves[asset].lastUpdateTimestamp",
-                    "_reserves[_reservesList[(0)+(1)]].isolationModeTotalDebt",
-                    "_reserves[asset].currentLiquidityRate",
-                    "_reserves[0].isolationModeTotalDebt"
-                ]
-            },
-            "repayWithPermit(address,uint256,uint256,address,uint256,uint8,bytes32,bytes32)": {
-                "parameters": [
-                    "asset",
-                    "amount",
-                    "interestRateMode",
-                    "onBehalfOf",
-                    "deadline",
-                    "permitV",
-                    "permitR",
-                    "permitS"
-                ],
-                "write_storages": [
-                    "_reserves[asset].variableBorrowIndex",
-                    "_reserves[asset].virtualUnderlyingBalance",
-                    "_reserves[asset].accruedToTreasury",
-                    "_reserves[asset].liquidityIndex",
-                    "_reserves[asset].currentVariableBorrowRate",
-                    "_usersConfig[onBehalfOf].data",
-                    "_reserves[_reservesList[0]].isolationModeTotalDebt",
-                    "_reserves[asset].lastUpdateTimestamp",
-                    "_reserves[_reservesList[(0)+(1)]].isolationModeTotalDebt",
-                    "_reserves[asset].currentLiquidityRate",
-                    "_reserves[0].isolationModeTotalDebt"
-                ]
-            },
-            "repayWithATokens(address,uint256,uint256)": {
-                "parameters": [
-                    "asset",
-                    "amount",
-                    "interestRateMode"
-                ],
-                "write_storages": [
-                    "_reserves[asset].variableBorrowIndex",
-                    "_reserves[asset].virtualUnderlyingBalance",
-                    "_reserves[asset].accruedToTreasury",
-                    "_reserves[asset].liquidityIndex",
-                    "_reserves[asset].currentVariableBorrowRate",
-                    "_reserves[_reservesList[0]].isolationModeTotalDebt",
-                    "_usersConfig[msg.sender].data",
-                    "_reserves[asset].lastUpdateTimestamp",
-                    "_reserves[_reservesList[(0)+(1)]].isolationModeTotalDebt",
-                    "_reserves[asset].currentLiquidityRate",
-                    "_reserves[0].isolationModeTotalDebt"
-                ]
-            },
-            "setUserUseReserveAsCollateral(address,bool)": {
-                "parameters": [
-                    "asset",
-                    "useAsCollateral"
-                ],
-                "write_storages": [
-                    "_usersConfig[msg.sender].data"
-                ]
-            },
-            "liquidationCall(address,address,address,uint256,bool)": {
-                "parameters": [
-                    "collateralAsset",
-                    "debtAsset",
-                    "borrower",
-                    "debtToCover",
-                    "receiveAToken"
-                ],
-                "write_storages": [
-                    "_reserves[debtAsset].aTokenAddress",
-                    "_reserves[_reservesList[0]].currentVariableBorrowRate",
-                    "_usersConfig[msg.sender].data",
-                    "_reserves[debtAsset].liquidityIndex",
-                    "_reserves[debtAsset].currentLiquidityRate",
-                    "_reserves[collateralAsset].configuration",
-                    "_reserves[debtAsset].configuration",
-                    "_reserves[collateralAsset].isolationModeTotalDebt",
-                    "_reserves[collateralAsset].deficit",
-                    "_reserves[collateralAsset].variableDebtTokenAddress",
-                    "_usersConfig[borrower].data",
-                    "_reserves[_reservesList[0]].liquidityIndex",
-                    "_reserves[debtAsset].variableDebtTokenAddress",
-                    "_reserves[_reservesList[0]].deficit",
-                    "_reserves[debtAsset].id",
-                    "_reserves[debtAsset].variableBorrowIndex",
-                    "_reserves[debtAsset].lastUpdateTimestamp",
-                    "_reserves[collateralAsset].currentVariableBorrowRate",
-                    "_reserves[_reservesList[0]].accruedToTreasury",
-                    "_reserves[collateralAsset].lastUpdateTimestamp",
-                    "_reserves[collateralAsset].currentLiquidityRate",
-                    "_reserves[debtAsset].currentVariableBorrowRate",
-                    "_reserves[collateralAsset].aTokenAddress",
-                    "_reserves[collateralAsset].variableBorrowIndex",
-                    "_reserves[_reservesList[0]].variableBorrowIndex",
-                    "_reserves[_reservesList[0]].virtualUnderlyingBalance",
-                    "_reserves[_reservesList[0]].currentLiquidityRate",
-                    "_reserves[debtAsset].virtualUnderlyingBalance",
-                    "_reserves[collateralAsset].liquidityIndex",
-                    "_reserves[collateralAsset].virtualUnderlyingBalance",
-                    "_reserves[_reservesList[0]].lastUpdateTimestamp",
-                    "_reserves[debtAsset].deficit"
-                ]
-            },
-            "flashLoan(address,address[],uint256[],uint256[],address,bytes,uint16)": {
-                "parameters": [
-                    "receiverAddress",
-                    "assets",
-                    "amounts",
-                    "interestRateModes",
-                    "onBehalfOf",
-                    "params",
-                    "referralCode"
-                ],
-                "write_storages": [
-                    "_reserves[_reservesList[((0)+(1))+(1)]].isolationModeTotalDebt",
-                    "_reserves[assets[0]].lastUpdateTimestamp",
-                    "_usersConfig[onBehalfOf].data",
-                    "_reserves[assets[0]].variableBorrowIndex",
-                    "_reserves[_reservesList[(0)+(1)]].isolationModeTotalDebt",
-                    "_reserves[assets[0]].virtualUnderlyingBalance",
-                    "_reserves[assets[0]].currentLiquidityRate",
-                    "_reserves[assets[0]].accruedToTreasury",
-                    "_reserves[assets[0]].liquidityIndex",
-                    "_reserves[assets[0]].currentVariableBorrowRate",
-                    "_reserves[0].isolationModeTotalDebt"
-                ]
-            },
-            "flashLoanSimple(address,address,uint256,bytes,uint16)": {
-                "parameters": [
-                    "receiverAddress",
-                    "asset",
-                    "amount",
-                    "params",
-                    "referralCode"
-                ],
-                "write_storages": [
-                    "_reserves[asset].variableBorrowIndex",
-                    "_reserves[asset].virtualUnderlyingBalance",
-                    "_reserves[asset].accruedToTreasury",
-                    "_reserves[asset].liquidityIndex",
-                    "_reserves[asset].currentVariableBorrowRate",
-                    "_reserves[asset].lastUpdateTimestamp",
-                    "_reserves[asset].currentLiquidityRate"
-                ]
-            },
-            "mintToTreasury(address[])": {
-                "parameters": [
-                    "assets"
-                ],
-                "write_storages": [
-                    "_reserves[assets[0]].accruedToTreasury"
-                ]
-            },
-            "getReserveData(address)": {
-                "parameters": [
-                    "asset"
-                ],
-                "write_storages": []
-            },
-            "getVirtualUnderlyingBalance(address)": {
-                "parameters": [
-                    "asset"
-                ],
-                "write_storages": []
-            },
-            "getUserAccountData(address)": {
-                "parameters": [
-                    "user"
-                ],
-                "write_storages": []
-            },
-            "getConfiguration(address)": {
-                "parameters": [
-                    "asset"
-                ],
-                "write_storages": []
-            },
-            "getUserConfiguration(address)": {
-                "parameters": [
-                    "user"
-                ],
-                "write_storages": []
-            },
-            "getReserveNormalizedIncome(address)": {
-                "parameters": [
-                    "asset"
-                ],
-                "write_storages": []
-            },
-            "getReserveNormalizedVariableDebt(address)": {
-                "parameters": [
-                    "asset"
-                ],
-                "write_storages": []
-            },
-            "getReservesList()": {
-                "parameters": [],
-                "write_storages": []
-            },
-            "getReservesCount()": {
-                "parameters": [],
-                "write_storages": []
-            },
-            "getReserveAddressById(uint16)": {
-                "parameters": [
-                    "id"
-                ],
-                "write_storages": []
-            },
-            "FLASHLOAN_PREMIUM_TOTAL()": {
-                "parameters": [],
-                "write_storages": []
-            },
-            "FLASHLOAN_PREMIUM_TO_PROTOCOL()": {
-                "parameters": [],
-                "write_storages": []
-            },
-            "MAX_NUMBER_RESERVES()": {
-                "parameters": [],
-                "write_storages": []
-            },
-            "finalizeTransfer(address,address,address,uint256,uint256,uint256)": {
-                "parameters": [
-                    "asset",
-                    "from",
-                    "to",
-                    "scaledAmount",
-                    "scaledBalanceFromBefore",
-                    "scaledBalanceToBefore"
-                ],
-                "write_storages": []
-            },
-            "initReserve(address,address,address)": {
-                "parameters": [
-                    "asset",
-                    "aTokenAddress",
-                    "variableDebtAddress"
-                ],
-                "write_storages": [
-                    "_reserves[asset].variableBorrowIndex",
-                    "_reservesList[_reservesCount]",
-                    "_reservesCount",
-                    "_reserves[asset].liquidityIndex",
-                    "_reserves[asset].aTokenAddress",
-                    "_reserves[asset].id",
-                    "_reservesList[0]",
-                    "_reserves[asset].variableDebtTokenAddress"
-                ]
-            },
-            "dropReserve(address)": {
-                "parameters": [
-                    "asset"
-                ],
-                "write_storages": [
-                    "_reserves",
-                    "_reservesList[_reserves[asset].id]"
-                ]
-            },
-            "syncIndexesState(address)": {
-                "parameters": [
-                    "asset"
-                ],
-                "write_storages": [
-                    "_reserves[asset].variableBorrowIndex",
-                    "_reserves[asset].lastUpdateTimestamp",
-                    "_reserves[asset].accruedToTreasury",
-                    "_reserves[asset].liquidityIndex"
-                ]
-            },
-            "syncRatesState(address)": {
-                "parameters": [
-                    "asset"
-                ],
-                "write_storages": [
-                    "_reserves[asset].virtualUnderlyingBalance",
-                    "_reserves[asset].currentLiquidityRate",
-                    "_reserves[asset].currentVariableBorrowRate"
-                ]
-            },
-            "setConfiguration(address,(uint256))": {
-                "parameters": [
-                    "asset",
-                    "configuration"
-                ],
-                "write_storages": []
-            },
-            "updateFlashloanPremium(uint128)": {
-                "parameters": [
-                    "flashLoanPremium"
-                ],
-                "write_storages": [
-                    "_flashLoanPremium"
-                ]
-            },
-            "configureEModeCategory(uint8,(uint16,uint16,uint16,string))": {
-                "parameters": [
-                    "id",
-                    "category"
-                ],
-                "write_storages": []
-            },
-            "configureEModeCategoryCollateralBitmap(uint8,uint128)": {
-                "parameters": [
-                    "id",
-                    "collateralBitmap"
-                ],
-                "write_storages": []
-            },
-            "configureEModeCategoryBorrowableBitmap(uint8,uint128)": {
-                "parameters": [
-                    "id",
-                    "borrowableBitmap"
-                ],
-                "write_storages": []
-            },
-            "getEModeCategoryData(uint8)": {
-                "parameters": [
-                    "id"
-                ],
-                "write_storages": []
-            },
-            "getEModeCategoryCollateralConfig(uint8)": {
-                "parameters": [
-                    "id"
-                ],
-                "write_storages": []
-            },
-            "getEModeCategoryLabel(uint8)": {
-                "parameters": [
-                    "id"
-                ],
-                "write_storages": []
-            },
-            "getEModeCategoryCollateralBitmap(uint8)": {
-                "parameters": [
-                    "id"
-                ],
-                "write_storages": []
-            },
-            "getEModeCategoryBorrowableBitmap(uint8)": {
-                "parameters": [
-                    "id"
-                ],
-                "write_storages": []
-            },
-            "setUserEMode(uint8)": {
-                "parameters": [
-                    "categoryId"
-                ],
-                "write_storages": [
-                    "_usersEModeCategory[msg.sender]"
-                ]
-            },
-            "getUserEMode(address)": {
-                "parameters": [
-                    "user"
-                ],
-                "write_storages": []
-            },
-            "resetIsolationModeTotalDebt(address)": {
-                "parameters": [
-                    "asset"
-                ],
-                "write_storages": [
-                    "_reserves[asset].isolationModeTotalDebt"
-                ]
-            },
-            "getLiquidationGracePeriod(address)": {
-                "parameters": [
-                    "asset"
-                ],
-                "write_storages": []
-            },
-            "setLiquidationGracePeriod(address,uint40)": {
-                "parameters": [
-                    "asset",
-                    "until"
-                ],
-                "write_storages": []
-            },
-            "rescueTokens(address,address,uint256)": {
-                "parameters": [
-                    "token",
-                    "to",
-                    "amount"
-                ],
-                "write_storages": []
-            },
-            "deposit(address,uint256,address,uint16)": {
-                "parameters": [
-                    "asset",
-                    "amount",
-                    "onBehalfOf",
-                    "referralCode"
-                ],
-                "write_storages": [
-                    "_reserves[asset].variableBorrowIndex",
-                    "_reserves[asset].virtualUnderlyingBalance",
-                    "_reserves[asset].accruedToTreasury",
-                    "_reserves[asset].liquidityIndex",
-                    "_reserves[asset].currentVariableBorrowRate",
-                    "_usersConfig[onBehalfOf].data",
-                    "_reserves[asset].lastUpdateTimestamp",
-                    "_reserves[asset].currentLiquidityRate"
-                ]
-            },
-            "eliminateReserveDeficit(address,uint256)": {
-                "parameters": [
-                    "asset",
-                    "amount"
-                ],
-                "write_storages": [
-                    "_reserves[asset].variableBorrowIndex",
-                    "_reserves[asset].virtualUnderlyingBalance",
-                    "_reserves[asset].accruedToTreasury",
-                    "_reserves[asset].liquidityIndex",
-                    "_reserves[asset].currentVariableBorrowRate",
-                    "_usersConfig[msg.sender].data",
-                    "_reserves[asset].lastUpdateTimestamp",
-                    "_reserves[asset].deficit",
-                    "_reserves[asset].currentLiquidityRate"
-                ]
-            },
-            "approvePositionManager(address,bool)": {
-                "parameters": [
-                    "positionManager",
-                    "approve"
-                ],
-                "write_storages": [
-                    "_positionManager[msg.sender][positionManager]"
-                ]
-            },
-            "renouncePositionManagerRole(address)": {
-                "parameters": [
-                    "user"
-                ],
-                "write_storages": [
-                    "_positionManager[user][msg.sender]"
-                ]
-            },
-            "setUserUseReserveAsCollateralOnBehalfOf(address,bool,address)": {
-                "parameters": [
-                    "asset",
-                    "useAsCollateral",
-                    "onBehalfOf"
-                ],
-                "write_storages": [
-                    "_usersConfig[onBehalfOf].data"
-                ]
-            },
-            "setUserEModeOnBehalfOf(uint8,address)": {
-                "parameters": [
-                    "categoryId",
-                    "onBehalfOf"
-                ],
-                "write_storages": [
-                    "_usersEModeCategory[onBehalfOf]"
-                ]
-            },
-            "isApprovedPositionManager(address,address)": {
-                "parameters": [
-                    "user",
-                    "positionManager"
-                ],
-                "write_storages": []
-            },
-            "getReserveDeficit(address)": {
-                "parameters": [
-                    "asset"
-                ],
-                "write_storages": []
-            },
-            "getReserveAToken(address)": {
-                "parameters": [
-                    "asset"
-                ],
-                "write_storages": []
-            },
-            "getReserveVariableDebtToken(address)": {
-                "parameters": [
-                    "asset"
-                ],
-                "write_storages": []
-            },
-            "getFlashLoanLogic()": {
-                "parameters": [],
-                "write_storages": []
-            },
-            "getBorrowLogic()": {
-                "parameters": [],
-                "write_storages": []
-            },
-            "getEModeLogic()": {
-                "parameters": [],
-                "write_storages": []
-            },
-            "getLiquidationLogic()": {
-                "parameters": [],
-                "write_storages": []
-            },
-            "getPoolLogic()": {
-                "parameters": [],
-                "write_storages": []
-            },
-            "getSupplyLogic()": {
-                "parameters": [],
-                "write_storages": []
-            },
-            "multicall(bytes[])": {
-                "parameters": [
-                    "data"
-                ],
-                "write_storages": []
-            },
-            "ADDRESSES_PROVIDER()": {
-                "parameters": [],
-                "write_storages": []
-            },
-            "RESERVE_INTEREST_RATE_STRATEGY()": {
-                "parameters": [],
-                "write_storages": []
-            },
-            "getRevision()": {
-                "parameters": [],
-                "write_storages": []
-            },
-            "constructor(address,address)": {
-                "parameters": [
-                    "provider",
-                    "interestRateStrategy_"
-                ],
-                "write_storages": []
-            },
-            "initialize(address)": {
-                "parameters": [
-                    "provider"
-                ],
-                "write_storages": [
-                    "lastInitializedRevision",
-                    "initializing"
-                ]
-            }
+            "supply(address,uint256,address,uint16) returns()": [
+                "_reserves[asset].lastUpdateTimestamp",
+                "_reserves[asset].liquidityIndex",
+                "_reserves[asset].accruedToTreasury",
+                "_reserves[asset].virtualUnderlyingBalance",
+                "_usersConfig[onBehalfOf].data",
+                "_reserves[asset].variableBorrowIndex",
+                "_reserves[asset].currentLiquidityRate",
+                "_reserves[asset].currentVariableBorrowRate"
+            ],
+            "supplyWithPermit(address,uint256,address,uint16,uint256,uint8,bytes32,bytes32) returns()": [
+                "_reserves[asset].lastUpdateTimestamp",
+                "_reserves[asset].liquidityIndex",
+                "_reserves[asset].accruedToTreasury",
+                "_reserves[asset].virtualUnderlyingBalance",
+                "_usersConfig[onBehalfOf].data",
+                "_reserves[asset].variableBorrowIndex",
+                "_reserves[asset].currentLiquidityRate",
+                "_reserves[asset].currentVariableBorrowRate"
+            ],
+            "withdraw(address,uint256,address) returns(uint256)": [
+                "_reserves[asset].lastUpdateTimestamp",
+                "_usersConfig[msg.sender].data",
+                "_reserves[asset].accruedToTreasury",
+                "_reserves[asset].liquidityIndex",
+                "_reserves[asset].virtualUnderlyingBalance",
+                "_reserves[asset].variableBorrowIndex",
+                "_reserves[asset].currentLiquidityRate",
+                "_reserves[asset].currentVariableBorrowRate"
+            ],
+            "borrow(address,uint256,uint256,uint16,address) returns()": [
+                "_reserves[asset].lastUpdateTimestamp",
+                "_reserves[asset].liquidityIndex",
+                "_reserves[asset].accruedToTreasury",
+                "_reserves[asset].virtualUnderlyingBalance",
+                "_usersConfig[onBehalfOf].data",
+                "_reserves[_reservesList[$all$]].isolationModeTotalDebt",
+                "_reserves[$all$].isolationModeTotalDebt",
+                "_reserves[asset].variableBorrowIndex",
+                "_reserves[_reservesList[$all$]].isolationModeTotalDebt",
+                "_reserves[asset].currentLiquidityRate",
+                "_reserves[asset].currentVariableBorrowRate"
+            ],
+            "repay(address,uint256,uint256,address) returns(uint256)": [
+                "_reserves[asset].lastUpdateTimestamp",
+                "_reserves[asset].liquidityIndex",
+                "_reserves[asset].accruedToTreasury",
+                "_reserves[asset].currentLiquidityRate",
+                "_reserves[asset].virtualUnderlyingBalance",
+                "_usersConfig[onBehalfOf].data",
+                "_reserves[_reservesList[(0)+(1)]].isolationModeTotalDebt",
+                "_reserves[0].isolationModeTotalDebt",
+                "_reserves[asset].variableBorrowIndex",
+                "_reserves[_reservesList[0]].isolationModeTotalDebt",
+                "_reserves[asset].currentVariableBorrowRate"
+            ],
+            "repayWithPermit(address,uint256,uint256,address,uint256,uint8,bytes32,bytes32) returns(uint256)": [
+                "_reserves[asset].lastUpdateTimestamp",
+                "_reserves[asset].liquidityIndex",
+                "_reserves[asset].accruedToTreasury",
+                "_reserves[asset].currentLiquidityRate",
+                "_reserves[asset].virtualUnderlyingBalance",
+                "_usersConfig[onBehalfOf].data",
+                "_reserves[_reservesList[(0)+(1)]].isolationModeTotalDebt",
+                "_reserves[0].isolationModeTotalDebt",
+                "_reserves[asset].variableBorrowIndex",
+                "_reserves[_reservesList[0]].isolationModeTotalDebt",
+                "_reserves[asset].currentVariableBorrowRate"
+            ],
+            "repayWithATokens(address,uint256,uint256) returns(uint256)": [
+                "_reserves[asset].lastUpdateTimestamp",
+                "_usersConfig[msg.sender].data",
+                "_reserves[asset].accruedToTreasury",
+                "_reserves[asset].liquidityIndex",
+                "_reserves[asset].virtualUnderlyingBalance",
+                "_reserves[asset].currentLiquidityRate",
+                "_reserves[_reservesList[(0)+(1)]].isolationModeTotalDebt",
+                "_reserves[0].isolationModeTotalDebt",
+                "_reserves[asset].variableBorrowIndex",
+                "_reserves[_reservesList[0]].isolationModeTotalDebt",
+                "_reserves[asset].currentVariableBorrowRate"
+            ],
+            "setUserUseReserveAsCollateral(address,bool) returns()": [
+                "_usersConfig[msg.sender].data"
+            ],
+            "liquidationCall(address,address,address,uint256,bool) returns()": [
+                "_reserves[collateralAsset].lastUpdateTimestamp",
+                "_reserves[_reservesList[0]].variableBorrowIndex",
+                "_reserves[collateralAsset].variableDebtTokenAddress",
+                "_reserves[collateralAsset].currentVariableBorrowRate",
+                "_reserves[_reservesList[0]].currentVariableBorrowRate",
+                "_reserves[debtAsset].virtualUnderlyingBalance",
+                "_reserves[debtAsset].liquidityIndex",
+                "_reserves[collateralAsset].deficit",
+                "_reserves[collateralAsset].currentLiquidityRate",
+                "_usersConfig[borrower].data",
+                "_reserves[_reservesList[0]].accruedToTreasury",
+                "_reserves[_reservesList[0]].lastUpdateTimestamp",
+                "_reserves[collateralAsset].aTokenAddress",
+                "_reserves[collateralAsset].isolationModeTotalDebt",
+                "_reserves[debtAsset].aTokenAddress",
+                "_reserves[collateralAsset].virtualUnderlyingBalance",
+                "_reserves[debtAsset].lastUpdateTimestamp",
+                "_reserves[collateralAsset].configuration",
+                "_reserves[_reservesList[0]].deficit",
+                "_reserves[debtAsset].deficit",
+                "_usersConfig[msg.sender].data",
+                "_reserves[debtAsset].variableBorrowIndex",
+                "_reserves[collateralAsset].variableBorrowIndex",
+                "_reserves[debtAsset].variableDebtTokenAddress",
+                "_reserves[debtAsset].configuration",
+                "_reserves[_reservesList[0]].virtualUnderlyingBalance",
+                "_reserves[debtAsset].currentLiquidityRate",
+                "_reserves[_reservesList[0]].liquidityIndex",
+                "_reserves[debtAsset].currentVariableBorrowRate",
+                "_reserves[debtAsset].id",
+                "_reserves[_reservesList[0]].currentLiquidityRate",
+                "_reserves[collateralAsset].liquidityIndex"
+            ],
+            "flashLoan(address,address[],uint256[],uint256[],address,bytes,uint16) returns()": [
+                "_reserves[assets[0]].currentLiquidityRate",
+                "_usersConfig[onBehalfOf].data",
+                "_reserves[assets[0]].liquidityIndex",
+                "_reserves[_reservesList[(0)+(1)]].isolationModeTotalDebt",
+                "_reserves[0].isolationModeTotalDebt",
+                "_reserves[assets[0]].currentVariableBorrowRate",
+                "_reserves[assets[0]].accruedToTreasury",
+                "_reserves[assets[0]].variableBorrowIndex",
+                "_reserves[_reservesList[((0)+(1))+(1)]].isolationModeTotalDebt",
+                "_reserves[assets[0]].lastUpdateTimestamp",
+                "_reserves[assets[0]].virtualUnderlyingBalance"
+            ],
+            "flashLoanSimple(address,address,uint256,bytes,uint16) returns()": [
+                "_reserves[asset].lastUpdateTimestamp",
+                "_reserves[asset].accruedToTreasury",
+                "_reserves[asset].liquidityIndex",
+                "_reserves[asset].virtualUnderlyingBalance",
+                "_reserves[asset].variableBorrowIndex",
+                "_reserves[asset].currentLiquidityRate",
+                "_reserves[asset].currentVariableBorrowRate"
+            ],
+            "mintToTreasury(address[]) returns()": [
+                "_reserves[assets[0]].accruedToTreasury"
+            ],
+            "getReserveData(address) returns(DataTypes.ReserveDataLegacy)": [],
+            "getVirtualUnderlyingBalance(address) returns(uint128)": [],
+            "getUserAccountData(address) returns(uint256,uint256,uint256,uint256,uint256,uint256)": [],
+            "getConfiguration(address) returns(DataTypes.ReserveConfigurationMap)": [],
+            "getUserConfiguration(address) returns(DataTypes.UserConfigurationMap)": [],
+            "getReserveNormalizedIncome(address) returns(uint256)": [],
+            "getReserveNormalizedVariableDebt(address) returns(uint256)": [],
+            "getReservesList() returns(address[])": [],
+            "getReservesCount() returns(uint256)": [],
+            "getReserveAddressById(uint16) returns(address)": [],
+            "FLASHLOAN_PREMIUM_TOTAL() returns(uint128)": [],
+            "FLASHLOAN_PREMIUM_TO_PROTOCOL() returns(uint128)": [],
+            "MAX_NUMBER_RESERVES() returns(uint16)": [],
+            "finalizeTransfer(address,address,address,uint256,uint256,uint256) returns()": [],
+            "initReserve(address,address,address) returns()": [
+                "_reserves[asset].liquidityIndex",
+                "_reserves[asset].aTokenAddress",
+                "_reservesList[_reservesCount]",
+                "_reservesCount",
+                "_reserves[asset].variableBorrowIndex",
+                "_reserves[asset].id",
+                "_reservesList[0]",
+                "_reserves[asset].variableDebtTokenAddress"
+            ],
+            "dropReserve(address) returns()": [
+                "_reservesList[_reserves[asset].id]",
+                "_reserves"
+            ],
+            "syncIndexesState(address) returns()": [
+                "_reserves[asset].lastUpdateTimestamp",
+                "_reserves[asset].liquidityIndex",
+                "_reserves[asset].variableBorrowIndex",
+                "_reserves[asset].accruedToTreasury"
+            ],
+            "syncRatesState(address) returns()": [
+                "_reserves[asset].currentLiquidityRate",
+                "_reserves[asset].currentVariableBorrowRate",
+                "_reserves[asset].virtualUnderlyingBalance"
+            ],
+            "setConfiguration(address,DataTypes.ReserveConfigurationMap) returns()": [
+                "_reserves[asset].configuration"
+            ],
+            "updateFlashloanPremium(uint128) returns()": [
+                "_flashLoanPremium"
+            ],
+            "configureEModeCategory(uint8,DataTypes.EModeCategoryBaseConfiguration) returns()": [],
+            "configureEModeCategoryCollateralBitmap(uint8,uint128) returns()": [],
+            "configureEModeCategoryBorrowableBitmap(uint8,uint128) returns()": [],
+            "getEModeCategoryData(uint8) returns(DataTypes.EModeCategoryLegacy)": [],
+            "getEModeCategoryCollateralConfig(uint8) returns(DataTypes.CollateralConfig)": [],
+            "getEModeCategoryLabel(uint8) returns(string)": [],
+            "getEModeCategoryCollateralBitmap(uint8) returns(uint128)": [],
+            "getEModeCategoryBorrowableBitmap(uint8) returns(uint128)": [],
+            "setUserEMode(uint8) returns()": [
+                "_usersEModeCategory[msg.sender]"
+            ],
+            "getUserEMode(address) returns(uint256)": [],
+            "resetIsolationModeTotalDebt(address) returns()": [
+                "_reserves[asset].isolationModeTotalDebt"
+            ],
+            "getLiquidationGracePeriod(address) returns(uint40)": [],
+            "setLiquidationGracePeriod(address,uint40) returns()": [],
+            "rescueTokens(address,address,uint256) returns()": [],
+            "deposit(address,uint256,address,uint16) returns()": [
+                "_reserves[asset].lastUpdateTimestamp",
+                "_reserves[asset].liquidityIndex",
+                "_reserves[asset].accruedToTreasury",
+                "_reserves[asset].virtualUnderlyingBalance",
+                "_usersConfig[onBehalfOf].data",
+                "_reserves[asset].variableBorrowIndex",
+                "_reserves[asset].currentLiquidityRate",
+                "_reserves[asset].currentVariableBorrowRate"
+            ],
+            "eliminateReserveDeficit(address,uint256) returns(uint256)": [
+                "_reserves[asset].lastUpdateTimestamp",
+                "_usersConfig[msg.sender].data",
+                "_reserves[asset].accruedToTreasury",
+                "_reserves[asset].liquidityIndex",
+                "_reserves[asset].virtualUnderlyingBalance",
+                "_reserves[asset].variableBorrowIndex",
+                "_reserves[asset].currentLiquidityRate",
+                "_reserves[asset].currentVariableBorrowRate",
+                "_reserves[asset].deficit"
+            ],
+            "approvePositionManager(address,bool) returns()": [
+                "_positionManager[msg.sender][positionManager]"
+            ],
+            "renouncePositionManagerRole(address) returns()": [
+                "_positionManager[user][msg.sender]"
+            ],
+            "setUserUseReserveAsCollateralOnBehalfOf(address,bool,address) returns()": [
+                "_usersConfig[onBehalfOf].data"
+            ],
+            "setUserEModeOnBehalfOf(uint8,address) returns()": [
+                "_usersEModeCategory[onBehalfOf]"
+            ],
+            "isApprovedPositionManager(address,address) returns(bool)": [],
+            "getReserveDeficit(address) returns(uint256)": [],
+            "getReserveAToken(address) returns(address)": [],
+            "getReserveVariableDebtToken(address) returns(address)": [],
+            "getFlashLoanLogic() returns(address)": [],
+            "getBorrowLogic() returns(address)": [],
+            "getEModeLogic() returns(address)": [],
+            "getLiquidationLogic() returns(address)": [],
+            "getPoolLogic() returns(address)": [],
+            "getSupplyLogic() returns(address)": [],
+            "multicall(bytes[]) returns(bytes[])": [],
+            "ADDRESSES_PROVIDER() returns(IPoolAddressesProvider)": [],
+            "RESERVE_INTEREST_RATE_STRATEGY() returns(address)": [],
+            "getRevision() returns(uint256)": [],
+            "constructor(IPoolAddressesProvider,IReserveInterestRateStrategy) returns()": [],
+            "initialize(IPoolAddressesProvider) returns()": [
+                "initializing",
+                "lastInitializedRevision"
+            ]
         }
     }
 }

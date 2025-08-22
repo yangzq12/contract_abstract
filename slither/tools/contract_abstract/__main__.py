@@ -130,7 +130,7 @@ def main() -> None:
 
     # 获取合约的storage信息
     entity = Entity(target, primary_contract, contract_info)
-    entity.get_storage_meta() 
+    
 
     # 获取具体的storage信息
     # slot_info1, type_info1 = entity.get_storage_slot_info("_reservesList[1]")

@@ -20,6 +20,7 @@ from slither.slithir.operations.length import Length
 from slither.slithir.operations.unary import Unary, UnaryType
 from slither.slithir.operations.codesize import CodeSize
 from slither.slithir.operations.delete import Delete
+from slither.slithir.operations.low_level_call import LowLevelCall
 
 from slither.core.variables.state_variable import StateVariable
 from slither.core.variables.local_variable import LocalVariable
@@ -100,7 +101,7 @@ class SlitherIRParser:
             for argument in self.ir.arguments:
                 argument_context = self._deal_with_read(argument)
                 arguments_contexts.append(argument_context)
-            if path_index+1 < len(path) and isinstance(path[path_index+1], StartNode):
+            if path_index+1 < len(path) and isinstance(path[path_index+1], StartNode): # 说明是已经展开过的函数，那么就跳过
                 if path[path_index+1].function.canonical_name == function.canonical_name:
                     return [], self.ir, True
                 else:
@@ -401,6 +402,24 @@ class SlitherIRParser:
             self._deal_with_write(self.ir.lvalue, context)
         elif isinstance(self.ir, Delete):
             pass
+        elif isinstance(self.ir, LowLevelCall):
+            arguments = ""
+            context = AbstractContext(None, None, set(), set(), None)
+            destination_context = self._deal_with_read(self.ir.destination)
+            context.storage_taints = context.storage_taints | destination_context.storage_taints
+            context.input_taints = context.input_taints | destination_context.input_taints
+            context.value = destination_context.value+"."+self.ir.function_name.name+"("+arguments+")"
+            return_context = AbstractContext([], [], [], [], [])
+            if isinstance(self.ir.lvalue, TupleVariable):
+                for i in self.ir.lvalue.type:
+                    return_context.input.append(context.input)
+                    return_context.storage.append(context.storage)
+                    return_context.input_taints.append(context.input_taints)
+                    return_context.storage_taints.append(context.storage_taints)
+                    return_context.value.append(context.value)
+            else:
+                return_context = context
+            self._deal_with_write(self.ir.lvalue, return_context)
         else:
             raise Exception(f"IR not supported: {self.ir}")
         return [], self.ir, False
@@ -423,6 +442,7 @@ class SlitherIRParser:
 
     def record_write_storage(self, lvalue):
         if (hasattr(lvalue, "location") and lvalue.location == "storage") \
+            or (isinstance(lvalue, StateVariable) and lvalue.is_stored) \
             or (isinstance(lvalue, ReferenceVariable) and lvalue.points_to_origin is not None and hasattr(lvalue.points_to_origin, "location") and lvalue.points_to_origin.location == "storage") \
              or (isinstance(lvalue, ReferenceVariable) and lvalue.points_to_origin is not None and hasattr(lvalue.points_to_origin, "is_stored") and lvalue.points_to_origin.is_stored):
                 if "abstract" in lvalue.context and lvalue.context["abstract"] is not None:
@@ -473,6 +493,8 @@ class SlitherIRParser:
             SlitherIRParser.clear_abstract(ir.lvalue, storages)
         elif isinstance(ir, Delete):
             pass
+        elif isinstance(ir, LowLevelCall):
+            SlitherIRParser.clear_abstract(ir.lvalue, storages)
         else:
             raise Exception(f"IR not supported: {ir}")
 
@@ -569,7 +591,7 @@ class SlitherIRParser:
                 self._record_constant(variable)
                 return AbstractContext(None, None, set(), set(), variable.name)               
             elif isinstance(variable, LocalVariable) and variable.location == "memory": #临时申请的memroy变量，在没有初始化之前是没有任何值的
-                return AbstractContext(None, None, set(), set(), None)
+                return AbstractContext(None, None, set(), set(), "$unknown$")
             elif isinstance(variable, Constant):
                 return AbstractContext(None, None, set(), set(), variable.name)
             elif isinstance(variable, Contract):
@@ -580,7 +602,10 @@ class SlitherIRParser:
                 return AbstractContext(None, None, set(), set(), "0")
             elif isinstance(variable, EnumContract):
                 return AbstractContext(None, None, set(), set(), variable.name)
+            elif isinstance(variable, TemporaryVariable):
+                return AbstractContext(None, None, set(), set(), "$unknown$")
             else:
+                # return AbstractContext(None, None, set(), set(), "$unknown$")
                 raise Exception(f"Abstract context not found for {variable.name}")
         # 记录读的storage
         self.record_storage(self.walker.read_storages[self.walker.current_function], variable.context["abstract"])

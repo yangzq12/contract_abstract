@@ -10,17 +10,22 @@ from slither.tools.read_storage.read_storage import SlitherReadStorage
 
 
 class Entity:
-    def __init__(self, address, contract, contract_info):
+    def __init__(self, address, contract, contract_info, storage_meta={}):
         self.address = address
         self.contract = contract
         self.storage_name_to_statevariable = {}
         self.statevariable_to_storage_name = {}
         self.contract_info = contract_info
+        self.storage_meta = storage_meta
+        if self.storage_meta == {}:
+            self.get_storage_meta() 
 
     def get_address(self):
         return self.address
 
     def get_storage_meta(self):
+        if self.storage_meta != {}:
+            return self.storage_meta
         entities= {}
 
         for storage in self.contract.storage_variables_ordered:
@@ -253,6 +258,41 @@ class Entity:
             return {"name": expr[0:next_start], "index": None, "field": Entity.parse_expr_internal(expr[next_start:])}
         else:
             return {"name": expr[0:next_start], "index": None, "field": None}
+    
+    @staticmethod
+    def expr_to_string(expr_obj):
+        """
+        将解析出的表达式对象转换回字符串
+        Args:
+            expr_obj: 由parse_expr解析出的表达式对象，格式为{"name": str, "index": object, "field": object}
+        Returns:
+            str: 转换后的字符串表达式
+        """
+        if expr_obj is None:
+            return ""
+        
+        # 如果expr_obj是字符串（简单字段名），直接返回
+        if isinstance(expr_obj, str):
+            return expr_obj
+        
+        # 如果expr_obj是字典，按照parse_expr的结构处理
+        if isinstance(expr_obj, dict):
+            result = expr_obj["name"]
+            
+            # 处理index部分
+            if expr_obj["index"] is not None:
+                index_str = Entity.expr_to_string(expr_obj["index"])
+                result += f"[{index_str}]"
+            
+            # 处理field部分
+            if expr_obj["field"] is not None:
+                field_str = Entity.expr_to_string(expr_obj["field"])
+                result += f".{field_str}"
+            
+            return result
+        
+        # 其他类型直接转换为字符串
+        return str(expr_obj)
     
     @staticmethod
     def parse_expr_internal(expr: str):

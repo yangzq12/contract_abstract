@@ -316,5 +316,198 @@ class StorageProof:
 
         return block, storage_root
 
+    def get_value_from_trie(self, slot):
+        """
+        从本地MPT树中读取指定slot的value
+        Args:
+            slot: 存储槽位，可以是int或hex字符串
+        Returns:
+            bytes: 存储的value，如果不存在则返回None
+        """
+        if isinstance(slot, int):
+            slot = hex(slot)
+        
+        # 将slot编码为keccak哈希
+        key = keccak(to_bytes(slot).rjust(32, b"\x00"))
+        
+        try:
+            # 从trie中获取value
+            encoded_value = self.trie.get(key)
+            if encoded_value is None:
+                return None
+            
+            # 解码RLP编码的value
+            decoded_value = rlp.decode(encoded_value)
+            return decoded_value
+        except Exception as e:
+            logger.error(f"从trie读取value失败: {e}")
+            return None
+
+    def generate_proof_for_slot(self, slot):
+        """
+        为指定slot生成MPT proof
+        Args:
+            slot: 存储槽位，可以是int或hex字符串
+        Returns:
+            dict: 包含proof信息的字典
+        """
+        if isinstance(slot, int):
+            slot = hex(slot)
+        
+        # 将slot编码为keccak哈希
+        key = keccak(to_bytes(slot).rjust(32, b"\x00"))
+        
+        try:
+            # 生成proof
+            proof = self.trie.get_proof(key)
+            
+            # 获取当前value
+            value = self.get_value_from_trie(slot)
+            
+            return {
+                "slot": slot,
+                "key": encode_hex(key),
+                "value": encode_hex(value) if value is not None else None,
+                "proof": [encode_hex(p) for p in proof],
+                "root": encode_hex(self.trie.root_hash)
+            }
+        except Exception as e:
+            logger.error(f"生成proof失败: {e}")
+            return None
+
+    def verify_proof(self, slot, value, proof, root_hash):
+        """
+        验证MPT proof的正确性
+        Args:
+            slot: 存储槽位，可以是int或hex字符串
+            value: 期望的value，可以是bytes或hex字符串
+            proof: proof数组，每个元素是hex字符串
+            root_hash: 根哈希，hex字符串
+        Returns:
+            bool: proof是否有效
+        """
+        if isinstance(slot, int):
+            slot = hex(slot)
+        
+        if isinstance(value, str):
+            value = decode_hex(value)
+        
+        # 将slot编码为keccak哈希
+        key = keccak(to_bytes(slot).rjust(32, b"\x00"))
+        
+        try:
+            # 解码proof
+            decoded_proof = [decode_hex(p) for p in proof]
+            
+            # 验证proof
+            if value is None:
+                # 验证不存在的情况
+                result = self.trie.verify_proof(decode_hex(root_hash), key, None, decoded_proof)
+            else:
+                # 验证存在的情况
+                encoded_value = rlp.encode(value)
+                result = self.trie.verify_proof(decode_hex(root_hash), key, encoded_value, decoded_proof)
+            
+            return result
+        except Exception as e:
+            logger.error(f"验证proof失败: {e}")
+            return False
+
+    def get_storage_with_proof(self, slot):
+        """
+        获取指定slot的value和proof
+        Args:
+            slot: 存储槽位，可以是int或hex字符串
+        Returns:
+            dict: 包含value和proof的字典
+        """
+        if isinstance(slot, int):
+            slot = hex(slot)
+        
+        # 从trie中获取value
+        value = self.get_value_from_trie(slot)
+        
+        # 生成proof
+        proof_info = self.generate_proof_for_slot(slot)
+        
+        if proof_info is None:
+            return None
+        
+        return {
+            "slot": slot,
+            "value": encode_hex(value) if value is not None else None,
+            "proof": proof_info["proof"],
+            "root": proof_info["root"],
+            "verified": self.verify_proof(slot, value, proof_info["proof"], proof_info["root"])
+        }
+
+    def compare_with_onchain(self, slot):
+        """
+        比较本地trie和链上数据的差异
+        Args:
+            slot: 存储槽位，可以是int或hex字符串
+        Returns:
+            dict: 比较结果
+        """
+        if isinstance(slot, int):
+            slot = hex(slot)
+        
+        # 获取本地trie的value
+        local_value = self.get_value_from_trie(slot)
+        
+        # 获取链上的value
+        onchain_value = self.get_storage_value(slot)
+        
+        # 获取链上的proof
+        onchain_proof = self.get_storage_proof(slot)
+        
+        return {
+            "slot": slot,
+            "local_value": encode_hex(local_value) if local_value is not None else None,
+            "onchain_value": encode_hex(onchain_value) if onchain_value is not None else None,
+            "values_match": local_value == onchain_value,
+            "onchain_proof": onchain_proof
+        }
+
+    def batch_get_storage_with_proofs(self, slots):
+        """
+        批量获取多个slot的value和proof
+        Args:
+            slots: slot列表，每个元素可以是int或hex字符串
+        Returns:
+            list: 包含每个slot的value和proof的列表
+        """
+        results = []
+        for slot in slots:
+            result = self.get_storage_with_proof(slot)
+            if result is not None:
+                results.append(result)
+            else:
+                results.append({
+                    "slot": hex(slot) if isinstance(slot, int) else slot,
+                    "error": "Failed to get storage with proof"
+                })
+        return results
+
+    def export_proof_data(self, slot, output_file=None):
+        """
+        导出指定slot的proof数据到文件
+        Args:
+            slot: 存储槽位，可以是int或hex字符串
+            output_file: 输出文件路径，如果为None则返回字典
+        Returns:
+            dict or None: proof数据字典，如果指定了output_file则返回None
+        """
+        proof_data = self.get_storage_with_proof(slot)
+        
+        if output_file:
+            import json
+            with open(output_file, 'w') as f:
+                json.dump(proof_data, f, indent=2)
+            logger.info(f"Proof数据已导出到: {output_file}")
+            return None
+        else:
+            return proof_data
+
 
     

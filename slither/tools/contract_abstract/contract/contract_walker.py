@@ -56,7 +56,7 @@ class ContractWalker:
                     storage.context["abstract"] = AbstractContext(None, storage.name, set(), {storage.name}, storage.name)
 
                 logger.info(f"Walking function: {function.canonical_name}")
-                if function.canonical_name == "Pool.setConfiguration(address,DataTypes.ReserveConfigurationMap)":
+                if function.canonical_name == "Pool.setConfiguration(address,DataTypes.ReserveConfigurationMap)" or "flashLoan(" in function.canonical_name:
                     pass
                 all_paths = []
                 ContractWalker.get_all_paths(function.entry_point, [StartNode(function, arguments_contexts)], all_paths)
@@ -267,11 +267,6 @@ class ContractWalker:
             elif isinstance(destination, str):
                 pass # TODO: 处理
 
-                
-
-
-
-
 
     def analyse_bitmap(self):
         for named_bitmap in self.bitmaps:
@@ -323,13 +318,15 @@ class ContractWalker:
 
     def collect_function_write_storage(self):
         for function in self.write_storages:
-            
+            parameters = []
+            for parameter in function.parameters:
+                parameters.append(parameter.name)
             storage_writes = set()
             for storage in self.write_storages[function]:
                 meta = self.entity.get_field_from_name(storage, self.entity.storage_meta)
                 # if meta["dataType"] not in ["struct", "staticArray", "mapping", "dynamicArray"]:
                 storage_writes.add(storage)
-            self.function_write_storage[function.signature_str] = list(storage_writes)
+            self.function_write_storage[function.solidity_signature] = {"parameters": parameters, "write_storages": list(storage_writes)}
 
 
     @staticmethod
@@ -464,13 +461,17 @@ class ContractWalker:
                 for son in node.sons:
                     if son not in path:
                         ContractWalker.get_all_paths(son, path.copy(), all_paths, call_operation)
+                    else:
+                        if len(son.sons) > 0: #说明是循环，那么就选择false条件跳出循环，继续遍历
+                            path.append(son)
+                            ContractWalker.get_all_paths(son.sons[1], path.copy(), all_paths, call_operation)
             else:
                 path.append(EndNode(node.function, call_operation))
                 all_paths.append(path)
         else:
             path.append(EndNode(path[0].function, None))
             all_paths.append(path)
-
+    
     # 给每个parament的context标记上input和storage，{"input": [parmeterName], "storage": [storageName]}
     @staticmethod
     def deal_with_context_enter(parameters, arguments_contexts):
