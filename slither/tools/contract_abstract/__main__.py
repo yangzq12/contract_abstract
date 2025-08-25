@@ -158,8 +158,6 @@ def main() -> None:
     with open(output_file_name, "w") as f:
         json.dump(result, f, indent=4)
 
-    
-
     logger.info(f"------------END------------")
 
     

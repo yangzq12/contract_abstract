@@ -6,6 +6,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import logging
 import time
+from slither.tools.contract_abstract.database_manager import DatabaseManager
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -20,9 +21,15 @@ class StorageProof:
             'host': 'localhost',
             'port': 5432,
             'database': 'storage_trie_db',
-            'user': 'postgres',
+            'user': 'zhiqiang',
             'password': 'password'
         }
+        self.db_connection = None
+
+         # 初始化数据库管理器并设置数据库环境
+        self.db_manager = DatabaseManager(self.db_config)
+        if not self.db_manager.setup_database():
+            raise Exception("数据库环境设置失败")
 
         self.init_database()
         if not self.load_trie_from_database():
@@ -40,7 +47,7 @@ class StorageProof:
                 self.db_connection = psycopg2.connect(**self.db_config)
                 self.db_connection.autocommit = False
                 logger.info("成功连接到MPT数据库")
-                return
+                return self.db_connection
             except psycopg2.OperationalError as e:
                 error_msg = str(e).lower()
                 logger.error(f"数据库连接失败 (尝试 {attempt + 1}/{max_retries}): {e}")
@@ -60,7 +67,7 @@ class StorageProof:
                             logger.info(f"成功连接到MPT数据库 (使用小写名称: {lowercase_db_name})")
                             # 更新配置中的数据库名称为小写
                             self.db_config['database'] = lowercase_db_name
-                            return
+                            return self.db_connection
                         except psycopg2.OperationalError as e2:
                             logger.error(f"使用小写数据库名称连接也失败: {e2}")
                     
@@ -86,9 +93,10 @@ class StorageProof:
 
     def init_database(self):
         """初始化数据库表结构"""
-        conn = self.connect_db()
+        if not self.db_connection:
+            self.connect_db()
         try:
-            with conn.cursor() as cursor:
+            with self.db_connection.cursor() as cursor:
                 # 创建存储trie数据的表
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS storage_tries (
@@ -108,19 +116,19 @@ class StorageProof:
                     ON storage_tries(contract_address, block_number)
                 """)
                 
-                conn.commit()
+                self.db_connection.commit()
         except Exception as e:
-            conn.rollback()
+            self.db_connection.rollback()
             raise Exception(f"数据库初始化失败: {e}")
-        finally:
-            conn.close()
 
     def save_trie_to_database(self):
         """将当前的storage trie保存到数据库"""
         if not self.db_config:
             raise Exception("数据库配置未设置")
         
-        conn = self.connect_db()
+        if not self.db_connection:
+            self.connect_db()
+        
         try:
             # 初始化数据库表
             self.init_database()
@@ -129,7 +137,7 @@ class StorageProof:
             trie_data = pickle.dumps(self.trie.db)
             trie_root = encode_hex(self.trie.root_hash)
             
-            with conn.cursor() as cursor:
+            with self.db_connection.cursor() as cursor:
                 cursor.execute("""
                     INSERT INTO storage_tries 
                     (contract_address, block_number, trie_data, trie_root_hash)
@@ -141,23 +149,20 @@ class StorageProof:
                         created_at = CURRENT_TIMESTAMP
                 """, (self.contract_address, self.block_number, trie_data, trie_root))
                 
-                conn.commit()
+                self.db_connection.commit()
                 print(f"Trie已保存到数据库: 合约={self.contract_address}, 区块={self.block_number}")
                 
         except Exception as e:
-            conn.rollback()
+            self.db_connection.rollback()
             raise Exception(f"保存trie到数据库失败: {e}")
-        finally:
-            conn.close()
 
     def load_trie_from_database(self):
         """从数据库加载storage trie"""
-        if not self.db_config:
-            raise Exception("数据库配置未设置")
+        if not self.db_connection:
+            self.connect_db()
         
-        conn = self.connect_db()
         try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            with self.db_connection.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute("""
                     SELECT trie_data, trie_root_hash 
                     FROM storage_tries 
@@ -177,17 +182,14 @@ class StorageProof:
                     
         except Exception as e:
             raise Exception(f"从数据库加载trie失败: {e}")
-        finally:
-            conn.close()
 
     def get_trie_info_from_database(self):
         """从数据库获取trie信息（不加载完整trie）"""
-        if not self.db_config:
-            raise Exception("数据库配置未设置")
+        if not self.db_connection:
+            self.connect_db()
         
-        conn = self.connect_db()
         try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            with self.db_connection.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute("""
                     SELECT trie_root_hash, created_at 
                     FROM storage_tries 
@@ -205,17 +207,14 @@ class StorageProof:
                     
         except Exception as e:
             raise Exception(f"获取trie信息失败: {e}")
-        finally:
-            conn.close()
 
     def list_available_tries(self):
         """列出数据库中可用的trie"""
-        if not self.db_config:
-            raise Exception("数据库配置未设置")
+        if not self.db_connection:
+            self.connect_db()
         
-        conn = self.get_db_connection()
         try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            with self.db_connection.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute("""
                     SELECT contract_address, block_number, trie_root_hash, created_at 
                     FROM storage_tries 
@@ -227,24 +226,21 @@ class StorageProof:
                     
         except Exception as e:
             raise Exception(f"获取trie列表失败: {e}")
-        finally:
-            conn.close()
 
     def delete_trie_from_database(self):
         """从数据库删除当前的trie"""
-        if not self.db_config:
-            raise Exception("数据库配置未设置")
+        if not self.db_connection:
+            self.connect_db()
         
-        conn = self.get_db_connection()
         try:
-            with conn.cursor() as cursor:
+            with self.db_connection.cursor() as cursor:
                 cursor.execute("""
                     DELETE FROM storage_tries 
                     WHERE contract_address = %s AND block_number = %s
                 """, (self.contract_address, self.block_number))
                 
                 if cursor.rowcount > 0:
-                    conn.commit()
+                    self.db_connection.commit()
                     print(f"Trie已从数据库删除: 合约={self.contract_address}, 区块={self.block_number}")
                     return True
                 else:
@@ -252,10 +248,8 @@ class StorageProof:
                     return False
                     
         except Exception as e:
-            conn.rollback()
+            self.db_connection.rollback()
             raise Exception(f"删除trie失败: {e}")
-        finally:
-            conn.close()
 
     def get_storage_info(self):
         return self.storage_info
@@ -509,5 +503,17 @@ class StorageProof:
         else:
             return proof_data
 
+    def close_connection(self):
+        """
+        手动关闭数据库连接
+        """
+        if self.db_connection:
+            self.db_connection.close()
+            self.db_connection = None
+            logger.info("数据库连接已关闭")
 
-    
+    def __del__(self):
+        """
+        析构函数，确保在对象销毁时关闭数据库连接
+        """
+        self.close_connection()

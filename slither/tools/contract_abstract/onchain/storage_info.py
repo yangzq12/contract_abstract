@@ -6,6 +6,7 @@ import time
 import re
 import math
 import copy
+from eth_abi import decode, encode
 from slither.tools.contract_abstract.onchain.storage_proof import StorageProof
 from eth_utils import keccak
 from slither.tools.contract_abstract.contract.entity import Entity
@@ -23,6 +24,14 @@ class StorageInfo:
         self.db_connection = None
         self.meta_json = meta_json
         self.entity = Entity(target_address, None, contract_info, meta_json["entities"])
+        self.revert_threshold = 12
+        self.abi = self.transaction_info.abi
+
+        self.simple_table_name = "simple_entities"
+
+        self.storage_proof = StorageProof(0, self.address, self.w3)
+        self.function_write_storage = {}
+
         self.deal_with_function_write_storage()
         
         # 初始化数据库管理器并设置数据库环境
@@ -32,13 +41,11 @@ class StorageInfo:
         
         self.connect_db()
         self.create_init_tables()
-        self.revert_threshold = 12
-        self.abi = self.transaction_info.abi
-
-        self.simple_table_name = "simple_entities"
-
-        self.storage_proof = StorageProof(0, self.address, self.w3)
-        self.function_write_storage = {}
+       
+        self.fact_keys = None
+        if not self.import_fact_keys_from_json("output/fact_keys.json"):
+            self.get_all_keys_for_mapping()
+            self.export_fact_keys_to_json("output/fact_keys.json")
 
     def connect_db(self):
         """连接到PostgreSQL数据库"""
@@ -152,7 +159,7 @@ class StorageInfo:
                 parsed_expr = Entity.parse_expr(write_storage)
                 self.function_write_storage[hash_str]["write_storages"].append(parsed_expr)
 
-    def sync_storage_to_block(self, block_number):
+    def sync_storage_to_block(self, block_number): # 一个交易一个交易的同步storage
         changed_slots = set()
         block = self.storage_proof.get_block_number()
         while block <= block_number:
@@ -168,23 +175,363 @@ class StorageInfo:
                         logger.error(f"无法解析交易: {tx['hash']}, with input: {tx['input_data']}")
         
        
-    def init_syn_storage(self):
-        for entity in self.meta_json["entities"]:
+    def init_syn_storage(self): # 最开始批量同步合约的storage，因为如果从第一个交易开始同步，存在大量请求的问题
+        for entity_name in self.meta_json["entities"]:
+            entity = self.meta_json["entities"][entity_name]
             if entity["dataType"] == "mapping":
-                pass
+                if entity_name in self.fact_keys:
+                    if entity["dataMeta"]["value"]["dataType"] == "mapping": # 两层mapping
+                        assert entity["dataMeta"]["value"]["dataType"]["value"]["dataType"] != "mapping"
+                        for key in self.fact_keys[entity_name]:
+                            keys = {"key1": key[0], "key2": key[1]}
+                            self._init_mapping_entity(entity, entity_name, "", entity["storageInfo"], keys)
+                    else:
+                        base_slot = entity["storageInfo"]["slot"]
+                        key_type = entity["dataMeta"]["key"]["dataType"]
+                        for key in self.fact_keys[entity_name]:
+                            slot_bytes = keccak(encode([key_type, "uint256"], [key, base_slot]))
+                            slot_int = int.from_bytes(slot_bytes, "big")
+                            slot_info = {"slot": slot_int, "offset": 0}
+                            keys = {"key1": key}
+                            self._init_mapping_entity(entity, entity_name, "", slot_info, keys)
             elif entity["dataType"] == "struct":
-                
+                prefix = entity_name + "__"
+                self._init_struct_entity(entity, self.simple_table_name, prefix, entity["storageInfo"], {"id": 1})
             elif entity["dataType"] == "staticArray" or entity["dataType"] == "dynamicArray":
-                pass
+                self._init_array_entity(entity, entity_name, entity["storageInfo"])
             else: # 简单类型
                 slot_info = entity["storageInfo"]
                 type = entity["dataType"]
                 value = self.entity.get_storage_value(slot_info, type)
                 #将value存入到simple_table中
-                self.write_elements_to_table(self.simple_table_name, {entity["name"]: value, "id": 1})
+                self.write_elements_to_table(self.simple_table_name, {entity_name: value, "id": 1})      
 
+    def _init_array_entity(self, entity, table_name, slot_info):
+        base_slot = slot_info["slot"] 
+        assert slot_info["offset"] == 0
+        slot = keccak(base_slot)
+        slot_int = int.from_bytes(slot, "big")
+        type = {
+            "dataType": "uint256",
+            "dataMeta": {
+                "size": 32
+            }
+        }
+        length = self.entity.get_storage_value(slot_info, type)
+        element_type = entity["dataMeta"]["elementType"]
+        if element_type["dataType"] == "struct":
+            for i in range(length):
+                slot_info = {"slot": slot_int + i, "offset": 0}
+                self._init_struct_entity(element_type, table_name, "", slot_info, {"key1": i})
+        elif element_type["dataType"] == "staticArray":
+            raise Exception("Unimplemented type: staticArray")
+        elif element_type["dataType"] == "dynamicArray":
+            raise Exception("Unimplemented type: dynamicArray")
+        elif element_type["dataType"] == "mapping":
+            raise Exception("Unimplemented type: "+element_type["dataType"])
+        else:
+            for i in range(length):
+                slot_info = {"slot": slot_int + i, "offset": 0}
+                value = self.entity.get_storage_value(slot_info, element_type)
+                self.write_elements_to_table(table_name, {"key1": i, "value": value})
 
+    def _init_struct_entity(self, entity, table_name, prefix, base_slot, keys):
+        for field in entity["dataMeta"]["fields"]:
+            if field["type"]["dataType"] == "mapping":
+                add_slot, offset, index = Entity.get_slot_info_for_structure(entity, field["name"])
+                assert index != -1
+                value = base_slot["slot"] + add_slot
+                selector = {prefix + field["name"]: value}
+                for key in keys:
+                    selector[key] = keys[key]
+                self.write_elements_to_table(table_name, selector)
+                self.create_table_for_mapping("table_"+str(value), field["type"])
+                #TODO: 向表格中加入内容
+            elif field["type"]["dataType"] == "struct":
+                add_slot, offset, index = Entity.get_slot_info_for_structure(entity, field["name"])
+                assert index != -1
+                slot_info = {"slot": base_slot["slot"] + add_slot, "offset": offset}
+                self._init_struct_entity(field["type"], table_name, prefix + field["name"] + "__", slot_info, keys)
+            elif field["type"]["dataType"] == "staticArray" or field["type"]["dataType"] == "dynamicArray":
+                add_slot, offset, index = Entity.get_slot_info_for_structure(entity, field["name"])
+                assert index != -1
+                value = base_slot["slot"] + add_slot
+                selector = {prefix + field["name"]: value}
+                for key in keys:
+                    selector[key] = keys[key]
+                self.write_elements_to_table(table_name, selector)
+                self.create_table_for_array("table_"+str(value), field["type"])
+                #向表格中加入内容
+                self._init_array_entity(field["type"], "table_"+str(value), {"slot": value, "offset": 0})
+            else:
+                add_slot, offset, index = Entity.get_slot_info_for_structure(entity, field["name"])
+                assert index != -1
+                slot_info = {"slot": base_slot["slot"] + add_slot, "offset": offset}
+                type = field["type"]
+                value = self.entity.get_storage_value(slot_info, type)
+                selector = {prefix + field["name"]: value}
+                for key in keys:
+                    selector[key] = keys[key]
+                self.write_elements_to_table(table_name, selector)
+
+    def _init_mapping_entity(self, entity, table_name, prefix, slot_info, keys):
+        if entity["dataMeta"]["value"]["dataType"] == "mapping":
+            raise Exception("Unimplemented mapping type in mapping type")
+        elif entity["dataMeta"]["value"]["dataType"] == "struct":
+            self._init_struct_entity(entity["dataMeta"]["value"], table_name, prefix, slot_info, keys)
+        elif entity["dataMeta"]["value"]["dataType"] == "staticArray" or entity["dataMeta"]["value"]["dataType"] == "dynamicArray":
+            raise Exception("Unimplemented array type in mapping type")
+        else:
+            slot_info = entity["storageInfo"]
+            type = entity["dataType"]
+            value = self.entity.get_storage_value(slot_info, type)
+            selector = {prefix + "value": value}
+            for key in keys:
+                selector[key] = keys[key]
+            #将value存入到mapping的table中
+            self.write_elements_to_table(table_name, selector) 
+            
+
+    def get_all_keys_for_mapping(self):
+        # 先分析function_write_storage，得到每个funciton对可能的mapping的entity可能引用的keys
+        all_keys = {}
+        for function in self.function_write_storage:
+            parameters = self.function_write_storage[function]["parameters"]
+            write_storages = self.function_write_storage[function]["write_storages"]
+            for write_storage in write_storages:
+                entity_name = write_storage["name"]
+                if entity_name in self.entity.storage_meta:
+                    if self.entity.storage_meta[entity_name]["dataType"] == "mapping":
+                        if self.entity.storage_meta[entity_name]["dataMeta"]["value"]["dataType"] == "mapping": #双层mapping
+                            assert self.entity.storage_meta[entity_name]["dataMeta"]["value"]["dataMeta"]["value"]["dataType"] != "mapping" #不处理三层及以上mapping
+                            first_index = write_storage["index"]
+                            second_index = write_storage["index"]["index"]
+                            if isinstance(first_index["name"], str) and isinstance(second_index["name"], str):
+                                if (first_index["name"] in parameters or first_index["name"] == "$msg_sender") and (second_index["name"] in parameters or second_index["name"] == "$msg_sender"):
+                                    if function not in all_keys:
+                                        all_keys[function] = {}
+                                    if entity_name not in all_keys[function]:
+                                        all_keys[function][entity_name] = set()
+                                    all_keys[function][entity_name].add((first_index["name"], second_index["name"]))
+                        else:# 一层mapping
+                            index = write_storage["index"]
+                            if index is None: # 没有index说明对所有key都写, 暂时不处理，因为没有一般由于gas限制没有这样的情况
+                                logger.warning(f"function {function} write {entity_name} with no index, which is not supported")
+                            elif isinstance(index["name"], str):
+                                if index["name"] in parameters or index["name"] == "$msg_sender":
+                                    if function not in all_keys:
+                                        all_keys[function] = {}
+                                    if entity_name not in all_keys[function]:
+                                        all_keys[function][entity_name] = set()
+                                    all_keys[function][entity_name].add(index["name"])
+                            else:
+                                if isinstance(index["name"]["name"], str): # 两层index并且是因为input是数组的关系
+                                    if index["name"]["name"] in parameters or index["name"]["name"] == "$msg_sender":
+                                        if function not in all_keys:
+                                            all_keys[function] = {}
+                                        if entity_name not in all_keys[function]:
+                                            all_keys[function][entity_name] = set()
+                                        all_keys[function][entity_name].add(index["name"]["name"])
+        # 然后实际根据交易参数的实际值得到每个mapping的entity实际的key
+        latest_block = self.transaction_info.get_latest_block_number()
+        contract_creation_block = self.transaction_info.get_contract_creation_block()
+        transactions_gen = self.transaction_info.get_transactions_paginated(contract_creation_block, latest_block, page_size=10000)
+        fact_keys = {}
+        for transactions in transactions_gen:
+            for tx in transactions:
+                if tx["is_error"] == 0 and tx["input_data"] != "" and tx["input_data"] is not None and tx["input_data"] != "0x":
+                    func_name, params = self.decode_input(tx["input_data"])
+                    method_id = tx["method_id"]
+                    if method_id in all_keys:
+                        for entity_name in all_keys[method_id]:
+                            for index in all_keys[method_id][entity_name]:
+                                if isinstance(index, tuple):
+                                    key_1 = []
+                                    key_2 = []
+                                    if index[0] == "$msg_sender":
+                                        key_1.append(tx["from_address"])
+                                    else:
+                                        if index[0] in params:
+                                            if isinstance(params[index[0]], list):
+                                                for param in params[index[0]]:
+                                                    key_1.append(param)
+                                            else:
+                                                key_1.append(params[index[0]])
+                                        else:
+                                            raise Exception(f"{index[0]} not found in params for function {method_id}")
+                                    if index[1] == "$msg_sender":
+                                        key_2.append(tx["from_address"])
+                                    else:
+                                        if index[1] in params:
+                                            if isinstance(params[index[1]], list):
+                                                for param in params[index[1]]:
+                                                    key_2.append(param)
+                                            else:
+                                                key_2.append(params[index[1]])
+                                        else:
+                                            raise Exception(f"{index[1]} not found in params for function {method_id}")
+                                    for index_1 in key_1:
+                                        for index_2 in key_2:
+                                            if entity_name not in fact_keys:
+                                                fact_keys[entity_name] = set()
+                                            fact_keys[entity_name].add((index_1,index_2))
+                                else:
+                                    if index == "$msg_sender":
+                                        if entity_name not in fact_keys:
+                                            fact_keys[entity_name] = set()
+                                        fact_keys[entity_name].add(tx["from_address"])
+                                    else:
+                                        if index in params:
+                                            if entity_name not in fact_keys:
+                                                fact_keys[entity_name] = set()
+                                            if isinstance(params[index], list):
+                                                for param in params[index]:
+                                                    fact_keys[entity_name].add(param)
+                                            else:
+                                                fact_keys[entity_name].add(params[index])
+                                        else:
+                                            raise Exception(f"{index} not found in params for function {method_id}")
+        self.fact_keys = fact_keys
+        return fact_keys
+
+    def export_fact_keys_to_json(self, output_file: str, include_metadata: bool = True) -> bool:
+        """
+        将fact_keys导出到JSON文件
+        
+        Args:
+            output_file: 输出文件路径
+            include_metadata: 是否包含元数据信息（合约地址、时间戳等）
+            
+        Returns:
+            bool: 导出是否成功
+        """
+        try:
+            # 准备导出数据
+            export_data = {}
+            
+            # 添加元数据
+            if include_metadata:
+                export_data['metadata'] = {
+                    'contract_address': self.address,
+                    'export_timestamp': time.time(),
+                    'export_time': time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'total_entities': len(self.fact_keys) if self.fact_keys else 0
+                }
+            
+            # 转换fact_keys为可序列化的格式
+            serializable_fact_keys = {}
+            if self.fact_keys:
+                for entity_name, keys_set in self.fact_keys.items():
+                    # 将set转换为list以便JSON序列化
+                    serializable_fact_keys[entity_name] = list(keys_set)
+            
+            export_data['fact_keys'] = serializable_fact_keys
+            
+            # 写入JSON文件
+            import json
+            with open(output_file, 'w', encoding='utf-8') as f:
+                json.dump(export_data, f, indent=2, ensure_ascii=False)
+            
+            logger.info(f"fact_keys已成功导出到: {output_file}")
+            logger.info(f"导出实体数量: {len(serializable_fact_keys)}")
+            
+            # 统计总key数量
+            total_keys = sum(len(keys) for keys in serializable_fact_keys.values())
+            logger.info(f"导出key总数: {total_keys}")
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"导出fact_keys到JSON文件失败: {e}")
+            return False
+
+    def import_fact_keys_from_json(self, input_file: str, merge_mode: str = 'replace') -> bool:
+        """
+        从JSON文件导入fact_keys
+        
+        Args:
+            input_file: 输入文件路径
+            merge_mode: 合并模式 ('replace', 'merge', 'append')
+                - replace: 完全替换现有的fact_keys
+                - merge: 合并到现有的fact_keys中
+                - append: 追加到现有的fact_keys中（可能重复）
                 
+        Returns:
+            bool: 导入是否成功
+        """
+        try:
+            import json
+            
+            # 读取JSON文件
+            with open(input_file, 'r', encoding='utf-8') as f:
+                import_data = json.load(f)
+            
+            # 验证文件格式
+            if 'fact_keys' not in import_data:
+                logger.error("JSON文件格式错误：缺少'fact_keys'字段")
+                return False
+            
+            # 获取导入的fact_keys
+            imported_fact_keys = import_data['fact_keys']
+            
+            # 转换回set格式
+            converted_fact_keys = {}
+            for entity_name, keys_list in imported_fact_keys.items():
+                converted_fact_keys[entity_name] = set(keys_list)
+            
+            # 根据合并模式处理数据
+            if merge_mode == 'replace':
+                self.fact_keys = converted_fact_keys
+                logger.info("完全替换现有的fact_keys")
+                
+            elif merge_mode == 'merge':
+                if not self.fact_keys:
+                    self.fact_keys = {}
+                
+                for entity_name, keys_set in converted_fact_keys.items():
+                    if entity_name not in self.fact_keys:
+                        self.fact_keys[entity_name] = set()
+                    self.fact_keys[entity_name].update(keys_set)
+                logger.info("合并到现有的fact_keys中")
+                
+            elif merge_mode == 'append':
+                if not self.fact_keys:
+                    self.fact_keys = {}
+                
+                for entity_name, keys_set in converted_fact_keys.items():
+                    if entity_name not in self.fact_keys:
+                        self.fact_keys[entity_name] = set()
+                    self.fact_keys[entity_name].update(keys_set)
+                logger.info("追加到现有的fact_keys中")
+                
+            else:
+                logger.error(f"不支持的合并模式: {merge_mode}")
+                return False
+            
+            # 显示导入统计信息
+            if 'metadata' in import_data:
+                metadata = import_data['metadata']
+                logger.info(f"从文件导入fact_keys: {input_file}")
+                logger.info(f"原始合约地址: {metadata.get('contract_address', 'Unknown')}")
+                logger.info(f"导出时间: {metadata.get('export_time', 'Unknown')}")
+            
+            total_entities = len(converted_fact_keys)
+            total_keys = sum(len(keys) for keys in converted_fact_keys.values())
+            logger.info(f"导入实体数量: {total_entities}")
+            logger.info(f"导入key总数: {total_keys}")
+            
+            return True
+            
+        except FileNotFoundError:
+            logger.error(f"文件不存在: {input_file}")
+            return False
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON文件格式错误: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"从JSON文件导入fact_keys失败: {e}")
+            return False
+                                
 
     def get_changed_slots(self, params, write_expr, changed_slots):
         if isinstance(write_expr["name"], str):
@@ -676,10 +1023,10 @@ class StorageInfo:
             else:
                 if "key" in name:
                     read = True
-        if "bitmap" in element:
-            bitmap = element["bitmap"]
-        else:
-            bitmap = None
+        # if "bitmap" in element:
+        #     bitmap = element["bitmap"]
+        # else:
+        bitmap = None # TODO: 先不处理bitmap
         if read and bitmap is None: # 只有有读标记的storage才会被存储
             if "int" in element_type:
                 size = self.extract_number(element_type)
@@ -753,7 +1100,20 @@ class StorageInfo:
             m = math.ceil(size * math.log10(2))        # 无符号
         return m
 
-    
+    def close_connection(self):
+        """
+        手动关闭数据库连接
+        """
+        if self.db_connection:
+            self.db_connection.close()
+            self.db_connection = None
+            logger.info("数据库连接已关闭")
+
+    def __del__(self):
+        """
+        析构函数，确保在对象销毁时关闭数据库连接
+        """
+        self.close_connection()
 
 
                        

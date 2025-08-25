@@ -98,6 +98,8 @@ def main() -> None:
     )
     logger.info("storage信息初始化成功")
 
+    storage_info.sync_storage()
+
 
     # except Exception as e:
     #     logger.error(f"程序运行失败: {e}")

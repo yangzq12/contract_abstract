@@ -3,7 +3,7 @@ import psycopg2
 import time
 import json
 from psycopg2.extras import RealDictCursor
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Generator
 import logging
 import sys
 import os
@@ -324,7 +324,6 @@ class TransactionInfo:
         except Exception as e:
             raise Exception(f"获取交易记录时发生错误: {e}")
 
-    
     def save_transactions_to_db(self, transactions: List[Dict[str, Any]]) -> int:
         """将交易数据保存到PostgreSQL数据库"""
         if not self.db_connection:
@@ -385,20 +384,19 @@ class TransactionInfo:
         finally:
             cursor.close()
 
-    def get_transactions_from_db(self, address: str = None, start_block: int = None, 
-                                end_block: int = None, limit: int = 100) -> List[Dict[str, Any]]:
-        """从数据库查询交易数据"""
+    def get_transactions_from_db(self, start_block, end_block, limit = 10000, page = 1) -> List[Dict[str, Any]]:
+        """从数据库查询交易数据（支持分页）"""
         if not self.db_connection:
             self.connect_db()
+        
+        # 设置合理的分页参数
+        page_size = min(limit, 10000) if limit else 10000  # 每页最大10000条
+        offset = (page - 1) * page_size
         
         cursor = self.db_connection.cursor(cursor_factory=RealDictCursor)
         
         query = f"SELECT * FROM {self.table_name} WHERE 1=1"
         params = []
-        
-        if address:
-            query += " AND (from_address = %s OR to_address = %s)"
-            params.extend([address, address])
         
         if start_block:
             query += " AND block_number >= %s"
@@ -408,18 +406,157 @@ class TransactionInfo:
             query += " AND block_number <= %s"
             params.append(end_block)
         
-        query += " ORDER BY block_number DESC, transaction_index DESC LIMIT %s"
-        params.append(limit)
+        query += " ORDER BY block_number DESC, transaction_index DESC LIMIT %s OFFSET %s"
+        params.extend([page_size, offset])
         
         try:
             cursor.execute(query, params)
             results = cursor.fetchall()
+            logger.info(f"查询第{page}页，每页{page_size}条，实际返回{len(results)}条记录")
             return [dict(row) for row in results]
         except Exception as e:
             logger.error(f"查询交易数据失败: {e}")
             raise
         finally:
             cursor.close()
+
+    def get_transactions_paginated(self, start_block, end_block, page_size=10000, 
+                                 max_pages=None, callback=None) -> Generator[List[Dict[str, Any]], None, None]:
+        """
+        分页查询交易数据，支持回调函数处理每页数据
+        
+        Args:
+            start_block: 起始区块号
+            end_block: 结束区块号
+            page_size: 每页大小，默认10000
+            max_pages: 最大页数限制，None表示无限制
+            callback: 回调函数，用于处理每页数据，参数为(page_num, transactions)
+        
+        Yields:
+            List[Dict[str, Any]]: 每页的交易数据
+        """
+        if not self.db_connection:
+            self.connect_db()
+        
+        page = 1
+        total_processed = 0
+        
+        while True:
+            if max_pages and page > max_pages:
+                logger.info(f"已达到最大页数限制: {max_pages}")
+                break
+                
+            transactions = self.get_transactions_from_db(
+                start_block=start_block, 
+                end_block=end_block, 
+                limit=page_size, 
+                page=page
+            )
+            
+            if not transactions:
+                logger.info(f"第{page}页无数据，查询结束")
+                break
+                
+            total_processed += len(transactions)
+            logger.info(f"处理第{page}页，本页{len(transactions)}条，累计{total_processed}条")
+            
+            # 如果提供了回调函数，先执行回调
+            if callback:
+                try:
+                    callback(page, transactions)
+                except Exception as e:
+                    logger.error(f"回调函数执行失败 (第{page}页): {e}")
+            
+            # 返回当前页数据
+            yield transactions
+            
+            page += 1
+
+    def get_total_transaction_count(self, start_block=None, end_block=None) -> int:
+        """
+        获取指定范围内的交易总数
+        
+        Args:
+            start_block: 起始区块号
+            end_block: 结束区块号
+            
+        Returns:
+            int: 交易总数
+        """
+        if not self.db_connection:
+            self.connect_db()
+        
+        cursor = self.db_connection.cursor()
+        
+        query = f"SELECT COUNT(*) as total FROM {self.table_name} WHERE 1=1"
+        params = []
+        
+        if start_block:
+            query += " AND block_number >= %s"
+            params.append(start_block)
+        
+        if end_block:
+            query += " AND block_number <= %s"
+            params.append(end_block)
+        
+        try:
+            cursor.execute(query, params)
+            result = cursor.fetchone()
+            total_count = result[0] if result else 0
+            logger.info(f"查询范围内交易总数: {total_count}")
+            return total_count
+        except Exception as e:
+            logger.error(f"获取交易总数失败: {e}")
+            raise
+        finally:
+            cursor.close()
+
+    def get_transactions_by_batch(self, start_block=None, end_block=None, batch_size=10000, 
+                                callback=None) -> Generator[List[Dict[str, Any]], None, None]:
+        """
+        批量查询交易数据，适合大数据量处理
+        
+        Args:
+            start_block: 起始区块号
+            end_block: 结束区块号
+            batch_size: 批次大小，默认10000
+            callback: 回调函数，用于处理每批数据，参数为(batch_num, transactions)
+        
+        Yields:
+            List[Dict[str, Any]]: 每批的交易数据
+        """
+        if not self.db_connection:
+            self.connect_db()
+        
+        batch_num = 1
+        total_processed = 0
+        
+        while True:
+            transactions = self.get_transactions_from_db(
+                start_block=start_block, 
+                end_block=end_block, 
+                limit=batch_size, 
+                page=batch_num
+            )
+            
+            if not transactions:
+                logger.info(f"第{batch_num}批无数据，查询结束")
+                break
+                
+            total_processed += len(transactions)
+            logger.info(f"处理第{batch_num}批，本批{len(transactions)}条，累计{total_processed}条")
+            
+            # 如果提供了回调函数，先执行回调
+            if callback:
+                try:
+                    callback(batch_num, transactions)
+                except Exception as e:
+                    logger.error(f"回调函数执行失败 (第{batch_num}批): {e}")
+            
+            # 返回当前批数据
+            yield transactions
+            
+            batch_num += 1
 
     def save_single_transaction(self, transaction: Dict[str, Any]) -> bool:
         """保存单条交易数据"""
@@ -662,7 +799,6 @@ class TransactionInfo:
                 logger.error(f"解析部署区块号失败: {creation_info['blockNumber']}")
                 return None
         return None
-
 
     def close_db_connection(self):
         """关闭数据库连接"""

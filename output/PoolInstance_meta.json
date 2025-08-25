@@ -829,6 +829,7 @@
             }
         },
         "address": "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
+        "logic_address": "0x97287a4f35e583d924f78ad88db8afce1379189a",
         "constants": {
             "Pool": [
                 {
@@ -1453,7 +1454,7 @@
                     "_reserves[asset].accruedToTreasury",
                     "_reserves[asset].liquidityIndex",
                     "_reserves[asset].currentVariableBorrowRate",
-                    "_usersConfig[msg.sender].data",
+                    "_usersConfig[$msg_sender].data",
                     "_reserves[asset].lastUpdateTimestamp",
                     "_reserves[asset].currentLiquidityRate"
                 ]
@@ -1539,7 +1540,7 @@
                     "_reserves[asset].liquidityIndex",
                     "_reserves[asset].currentVariableBorrowRate",
                     "_reserves[_reservesList[0]].isolationModeTotalDebt",
-                    "_usersConfig[msg.sender].data",
+                    "_usersConfig[$msg_sender].data",
                     "_reserves[asset].lastUpdateTimestamp",
                     "_reserves[_reservesList[(0)+(1)]].isolationModeTotalDebt",
                     "_reserves[asset].currentLiquidityRate",
@@ -1552,7 +1553,7 @@
                     "useAsCollateral"
                 ],
                 "write_storages": [
-                    "_usersConfig[msg.sender].data"
+                    "_usersConfig[$msg_sender].data"
                 ]
             },
             "liquidationCall(address,address,address,uint256,bool)": {
@@ -1566,7 +1567,7 @@
                 "write_storages": [
                     "_reserves[debtAsset].aTokenAddress",
                     "_reserves[_reservesList[0]].currentVariableBorrowRate",
-                    "_usersConfig[msg.sender].data",
+                    "_usersConfig[$msg_sender].data",
                     "_reserves[debtAsset].liquidityIndex",
                     "_reserves[debtAsset].currentLiquidityRate",
                     "_reserves[collateralAsset].configuration",
@@ -1749,7 +1750,7 @@
                     "asset"
                 ],
                 "write_storages": [
-                    "_reserves",
+                    "_reserves[asset]",
                     "_reservesList[_reserves[asset].id]"
                 ]
             },
@@ -1845,7 +1846,7 @@
                     "categoryId"
                 ],
                 "write_storages": [
-                    "_usersEModeCategory[msg.sender]"
+                    "_usersEModeCategory[$msg_sender]"
                 ]
             },
             "getUserEMode(address)": {
@@ -1912,7 +1913,7 @@
                     "_reserves[asset].accruedToTreasury",
                     "_reserves[asset].liquidityIndex",
                     "_reserves[asset].currentVariableBorrowRate",
-                    "_usersConfig[msg.sender].data",
+                    "_usersConfig[$msg_sender].data",
                     "_reserves[asset].lastUpdateTimestamp",
                     "_reserves[asset].deficit",
                     "_reserves[asset].currentLiquidityRate"
@@ -1924,7 +1925,7 @@
                     "approve"
                 ],
                 "write_storages": [
-                    "_positionManager[msg.sender][positionManager]"
+                    "_positionManager[$msg_sender][positionManager]"
                 ]
             },
             "renouncePositionManagerRole(address)": {
@@ -1932,7 +1933,7 @@
                     "user"
                 ],
                 "write_storages": [
-                    "_positionManager[user][msg.sender]"
+                    "_positionManager[user][$msg_sender]"
                 ]
             },
             "setUserUseReserveAsCollateralOnBehalfOf(address,bool,address)": {
